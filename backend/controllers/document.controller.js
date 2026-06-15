@@ -24,6 +24,19 @@ const getByCustomer = async (req, res) => {
   }
 }
 
+// GET /api/documents
+const getAll = async (req, res) => {
+  try {
+    const docs = await Document.findAll({
+      include: [{ model: Customer, as: 'customer', attributes: ['name'] }],
+      order: [['createdAt', 'DESC']],
+    })
+    res.json(docs)
+  } catch (error) {
+    res.status(500).json({ message: 'Error.', error: error.message })
+  }
+}
+
 // POST /api/documents/upload
 // req.file is populated by multer middleware (configured in routes)
 const upload = async (req, res) => {
@@ -93,4 +106,4 @@ const remove = async (req, res) => {
   }
 }
 
-module.exports = { getByCustomer, upload, download, remove }
+module.exports = { getAll, getByCustomer, upload, download, remove }

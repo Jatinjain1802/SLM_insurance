@@ -16,46 +16,18 @@ import { dashboardAPI } from '../services/api'
 
 // ---- Mock data (used until backend is connected) ----
 const MOCK_STATS = {
-  totalCustomers: 248,
-  activePolicies: 312,
-  expiredPolicies: 47,
-  dueSoon: 23,
-  monthlyRevenue: 184500,
-  totalPremium: 2340000,
+  totalCustomers: 0,
+  activePolicies: 0,
+  expiredPolicies: 0,
+  dueSoon: 0,
+  monthlyRevenue: 0,
+  totalPremium: 0,
 }
 
-const REVENUE_DATA = [
-  { month: 'Jan', revenue: 142000 },
-  { month: 'Feb', revenue: 158000 },
-  { month: 'Mar', revenue: 134000 },
-  { month: 'Apr', revenue: 172000 },
-  { month: 'May', revenue: 165000 },
-  { month: 'Jun', revenue: 184500 },
-]
-
-const POLICY_TYPE_DATA = [
-  { name: 'Life', value: 42, color: '#3b82f6' },
-  { name: 'Health', value: 28, color: '#22c55e' },
-  { name: 'Vehicle', value: 20, color: '#f59e0b' },
-  { name: 'Travel', value: 10, color: '#8b5cf6' },
-]
-
-const RENEWAL_DATA = [
-  { month: 'Jan', renewed: 28, expired: 8 },
-  { month: 'Feb', renewed: 35, expired: 5 },
-  { month: 'Mar', renewed: 30, expired: 10 },
-  { month: 'Apr', renewed: 42, expired: 6 },
-  { month: 'May', renewed: 38, expired: 9 },
-  { month: 'Jun', renewed: 45, expired: 4 },
-]
-
-const RECENT_CUSTOMERS = [
-  { name: 'Rahul Sharma',   mobile: '9876543210', policies: 3, date: '12 Jun 2026' },
-  { name: 'Priya Patel',    mobile: '9123456780', policies: 2, date: '11 Jun 2026' },
-  { name: 'Amit Verma',     mobile: '9988776655', policies: 1, date: '10 Jun 2026' },
-  { name: 'Sunita Joshi',   mobile: '9001234567', policies: 4, date: '09 Jun 2026' },
-  { name: 'Deepak Malhotra', mobile: '9812345670', policies: 2, date: '08 Jun 2026' },
-]
+const REVENUE_DATA = []
+const POLICY_TYPE_DATA = []
+const RENEWAL_DATA = []
+const RECENT_CUSTOMERS = []
 
 const QUICK_ACTIONS = [
   { icon: '👤', label: 'Add Customer',    path: '/customers' },

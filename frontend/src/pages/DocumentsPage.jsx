@@ -8,20 +8,15 @@ import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
 import { documentsAPI, customersAPI } from '../services/api'
 
-const MOCK_DOCS = [
-  { id: 1, customerName: 'Rahul Sharma',    docType: 'Policy PDF',      fileName: 'LIC-2024-001.pdf',    uploadedAt: '2024-01-15', size: '2.4 MB' },
-  { id: 2, customerName: 'Rahul Sharma',    docType: 'Aadhaar',         fileName: 'aadhaar_rahul.pdf',   uploadedAt: '2024-01-15', size: '0.8 MB' },
-  { id: 3, customerName: 'Priya Patel',     docType: 'PAN',             fileName: 'pan_priya.pdf',       uploadedAt: '2025-07-01', size: '0.5 MB' },
-  { id: 4, customerName: 'Amit Verma',      docType: 'Premium Receipt', fileName: 'receipt_BAJ_2023.pdf', uploadedAt: '2023-09-10', size: '0.3 MB' },
-  { id: 5, customerName: 'Sunita Joshi',    docType: 'Policy PDF',      fileName: 'SBI-2025-207.pdf',    uploadedAt: '2025-01-15', size: '3.1 MB' },
-]
+// MOCK_DOCS removed in favor of real API
 
 const DOC_TYPES = ['Policy PDF', 'Aadhaar', 'PAN', 'Premium Receipt', 'Proposal Form', 'Other']
 const DOC_ICONS = { 'Policy PDF': '📄', 'Aadhaar': '🪪', 'PAN': '💳', 'Premium Receipt': '🧾', 'Proposal Form': '📝', 'Other': '📁' }
 
 function DocumentsPage() {
-  const [docs, setDocs] = useState(MOCK_DOCS)
+  const [docs, setDocs] = useState([])
   const [customers, setCustomers] = useState([])
+  const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [search, setSearch] = useState('')
@@ -29,7 +24,19 @@ function DocumentsPage() {
   const [form, setForm] = useState({ customerId: '', docType: '', policyId: '' })
 
   useEffect(() => {
-    customersAPI.getAll().then(r => setCustomers(r.data)).catch(() => {})
+    Promise.all([
+      customersAPI.getAll(),
+      documentsAPI.getAll()
+    ]).then(([custRes, docRes]) => {
+      setCustomers(custRes.data)
+      setDocs(docRes.data.map(d => ({
+        ...d,
+        customerName: d.customer?.name,
+        size: (d.fileSize / (1024*1024)).toFixed(1) + ' MB',
+        uploadedAt: d.createdAt
+      })))
+    }).catch(err => console.error(err))
+      .finally(() => setLoading(false))
   }, [])
 
   const filtered = docs.filter(d =>
@@ -54,39 +61,33 @@ function DocumentsPage() {
       formData.append('customerId', form.customerId)
       formData.append('docType', form.docType)
 
-      await documentsAPI.upload(formData)
-      // Add to local list as mock
+      const res = await documentsAPI.upload(formData)
+      const d = res.data
       setDocs([{
-        id: Date.now(),
-        customerName: customers.find(c => c.id === form.customerId)?.name || 'Customer',
-        docType: form.docType,
-        fileName: selectedFile.name,
-        uploadedAt: new Date().toISOString().split('T')[0],
-        size: (selectedFile.size / (1024*1024)).toFixed(1) + ' MB'
+        ...d,
+        customerName: customers.find(c => c.id == d.customerId)?.name || 'Customer',
+        size: (d.fileSize / (1024*1024)).toFixed(1) + ' MB',
+        uploadedAt: d.createdAt
       }, ...docs])
       setModalOpen(false)
       setSelectedFile(null)
       setForm({ customerId: '', docType: '', policyId: '' })
-    } catch {
-      // Mock add anyway
-      setDocs([{
-        id: Date.now(),
-        customerName: 'New Customer',
-        docType: form.docType || 'Other',
-        fileName: selectedFile.name,
-        uploadedAt: new Date().toISOString().split('T')[0],
-        size: (selectedFile.size / (1024*1024)).toFixed(1) + ' MB'
-      }, ...docs])
-      setModalOpen(false)
-      setSelectedFile(null)
+    } catch (err) {
+      console.error('Upload failed', err)
+      alert(err.response?.data?.message || 'Failed to upload document.')
     } finally {
       setUploading(false)
     }
   }
 
-  const handleDelete = (doc) => {
+  const handleDelete = async (doc) => {
     if (!window.confirm(`Delete ${doc.fileName}?`)) return
-    setDocs(docs.filter(d => d.id !== doc.id))
+    try {
+      await documentsAPI.delete(doc.id)
+      setDocs(docs.filter(d => d.id !== doc.id))
+    } catch (err) {
+      alert('Failed to delete.')
+    }
   }
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
@@ -121,7 +122,7 @@ function DocumentsPage() {
                 {DOC_ICONS[doc.docType] || '📁'}
               </div>
               <div style={{ display: 'flex', gap: '4px' }}>
-                <button className="btn-icon" title="Download" onClick={() => alert('Download: ' + doc.fileName)}>⬇️</button>
+                <a className="btn-icon" title="Download" href={`http://localhost:5000/api/documents/${doc.id}/download`} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>⬇️</a>
                 <button className="btn-icon" title="Delete" onClick={() => handleDelete(doc)}>🗑️</button>
               </div>
             </div>

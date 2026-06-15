@@ -8,23 +8,14 @@ import { useParams, useNavigate } from 'react-router-dom'
 import Badge from '../components/Badge'
 import { customersAPI, policiesAPI } from '../services/api'
 
-const MOCK_CUSTOMER = {
-  id: 1, name: 'Rahul Sharma', mobile: '9876543210', email: 'rahul@email.com',
-  address: 'Mumbai, Maharashtra', dob: '1985-03-15', aadhaar: '1234 5678 9012', pan: 'ABCDE1234F',
-}
-
-const MOCK_POLICIES = [
-  { id: 1, policyNumber: 'LIC-2024-001', type: 'Life', company: 'LIC', premiumAmount: 5000, expiryDate: '2026-12-31', status: 'active' },
-  { id: 2, policyNumber: 'HDR-2025-042', type: 'Health', company: 'HDFC', premiumAmount: 3500, expiryDate: '2026-07-15', status: 'active' },
-  { id: 3, policyNumber: 'BAJ-2023-118', type: 'Vehicle', company: 'Bajaj', premiumAmount: 2200, expiryDate: '2025-09-30', status: 'expired' },
-]
+// Mock data removed in favor of real API data
 
 function CustomerDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const [customer, setCustomer] = useState(MOCK_CUSTOMER)
-  const [policies, setPolicies] = useState(MOCK_POLICIES)
-  const [loading, setLoading] = useState(false)
+  const [customer, setCustomer] = useState(null)
+  const [policies, setPolicies] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,7 +27,9 @@ function CustomerDetailPage() {
         ])
         setCustomer(custRes.data)
         setPolicies(polRes.data)
-      } catch { /* use mock data */ }
+      } catch (err) {
+        console.error('Error fetching customer details:', err)
+      }
       finally { setLoading(false) }
     }
     fetchData()
@@ -44,6 +37,29 @@ function CustomerDetailPage() {
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
   const formatCurrency = (n) => n ? '₹' + Number(n).toLocaleString('en-IN') : '—'
+
+  if (loading) {
+    return (
+      <div className="page-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+        <p>Loading customer details...</p>
+      </div>
+    )
+  }
+
+  if (!customer) {
+    return (
+      <div className="page-container page-fade-in">
+        <button className="btn btn-secondary btn-sm" onClick={() => navigate('/customers')} style={{ marginBottom: '16px' }}>
+          ← Back to Customers
+        </button>
+        <div className="empty-state">
+          <div className="empty-state-icon">❌</div>
+          <h3>Customer Not Found</h3>
+          <p>The customer you are looking for does not exist or has been deleted.</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="page-container page-fade-in">
@@ -136,8 +152,8 @@ function CustomerDetailPage() {
               {policies.map((p) => (
                 <tr key={p.id}>
                   <td style={{ fontWeight: 500, fontFamily: 'monospace' }}>{p.policyNumber}</td>
-                  <td>{p.type}</td>
-                  <td>{p.company}</td>
+                  <td>{p.policyType}</td>
+                  <td>{p.company?.name || '—'}</td>
                   <td>{formatCurrency(p.premiumAmount)}</td>
                   <td>{formatDate(p.expiryDate)}</td>
                   <td><Badge status={p.status} /></td>

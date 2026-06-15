@@ -12,16 +12,7 @@ import Modal from '../components/Modal'
 import Badge from '../components/Badge'
 import { customersAPI } from '../services/api'
 
-// Mock data for development (before backend is ready)
-const MOCK_CUSTOMERS = [
-  { id: 1, name: 'Rahul Sharma',    mobile: '9876543210', email: 'rahul@email.com',  address: 'Mumbai',    dob: '1985-03-15', policies: 3, status: 'active' },
-  { id: 2, name: 'Priya Patel',     mobile: '9123456780', email: 'priya@email.com',  address: 'Pune',      dob: '1990-07-22', policies: 2, status: 'active' },
-  { id: 3, name: 'Amit Verma',      mobile: '9988776655', email: 'amit@email.com',   address: 'Delhi',     dob: '1978-11-05', policies: 1, status: 'active' },
-  { id: 4, name: 'Sunita Joshi',    mobile: '9001234567', email: 'sunita@email.com', address: 'Ahmedabad', dob: '1995-01-30', policies: 4, status: 'active' },
-  { id: 5, name: 'Deepak Malhotra', mobile: '9812345670', email: 'deepak@email.com', address: 'Jaipur',    dob: '1982-09-12', policies: 2, status: 'active' },
-  { id: 6, name: 'Neha Singh',      mobile: '9765432109', email: 'neha@email.com',   address: 'Bangalore', dob: '1993-06-18', policies: 1, status: 'active' },
-  { id: 7, name: 'Vijay Kumar',     mobile: '9654321098', email: 'vijay@email.com',  address: 'Chennai',   dob: '1975-12-25', policies: 3, status: 'active' },
-]
+// Removed MOCK_CUSTOMERS array
 
 const EMPTY_FORM = {
   name: '', mobile: '', email: '', address: '', dob: '', aadhaar: '', pan: ''
@@ -29,7 +20,7 @@ const EMPTY_FORM = {
 
 function CustomersPage() {
   const navigate = useNavigate()
-  const [customers, setCustomers] = useState(MOCK_CUSTOMERS)
+  const [customers, setCustomers] = useState([])
   const [loading, setLoading] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [editCustomer, setEditCustomer] = useState(null) // null = Add mode, object = Edit mode
@@ -44,8 +35,8 @@ function CustomersPage() {
       try {
         const res = await customersAPI.getAll()
         setCustomers(res.data)
-      } catch {
-        // Keep mock data
+      } catch (err) {
+        console.error('Failed to fetch customers', err)
       } finally {
         setLoading(false)
       }
@@ -97,15 +88,9 @@ function CustomersPage() {
         setCustomers([res.data, ...customers])
       }
       setModalOpen(false)
-    } catch {
-      // Mock: just update local state
-      if (editCustomer) {
-        setCustomers(customers.map(c =>
-          c.id === editCustomer.id ? { ...c, ...form } : c
-        ))
-      } else {
-        setCustomers([{ id: Date.now(), ...form, policies: 0, status: 'active' }, ...customers])
-      }
+    } catch (err) {
+      console.error('Save failed', err)
+      alert(err.response?.data?.message || 'Failed to save customer.')
       setModalOpen(false)
     } finally {
       setSaving(false)
@@ -116,9 +101,13 @@ function CustomersPage() {
   const handleDelete = async (customer) => {
     try {
       await customersAPI.delete(customer.id)
-    } catch { /* continue with local delete */ }
-    setCustomers(customers.filter(c => c.id !== customer.id))
-    setDeleteConfirm(null)
+      setCustomers(customers.filter(c => c.id !== customer.id))
+      setDeleteConfirm(null)
+    } catch (err) {
+      console.error('Delete failed', err)
+      alert('Failed to delete customer.')
+      setDeleteConfirm(null)
+    }
   }
 
   // Table columns definition
@@ -153,7 +142,7 @@ function CustomersPage() {
           background: 'rgba(59,130,246,0.15)', color: 'var(--primary-400)',
           padding: '2px 10px', borderRadius: '9999px', fontWeight: 600, fontSize: 12
         }}>
-          {val || 0}
+          {val?.length || 0}
         </span>
       )
     },

@@ -8,45 +8,16 @@ import {
   ResponsiveContainer, Legend
 } from 'recharts'
 
-const MONTHLY_REVENUE = [
-  { month: 'Jan', revenue: 142000, target: 150000 },
-  { month: 'Feb', revenue: 158000, target: 155000 },
-  { month: 'Mar', revenue: 134000, target: 160000 },
-  { month: 'Apr', revenue: 172000, target: 165000 },
-  { month: 'May', revenue: 165000, target: 170000 },
-  { month: 'Jun', revenue: 184500, target: 175000 },
-]
-
-const CUSTOMER_GROWTH = [
-  { month: 'Jan', new: 18, total: 180 },
-  { month: 'Feb', new: 24, total: 204 },
-  { month: 'Mar', new: 15, total: 219 },
-  { month: 'Apr', new: 28, total: 247 },
-  { month: 'May', new: 22, total: 269 },
-  { month: 'Jun', new: 19, total: 288 },
-]
-
-const COMPANY_SALES = [
-  { company: 'LIC',    policies: 45, revenue: 225000 },
-  { company: 'HDFC',   policies: 32, revenue: 192000 },
-  { company: 'ICICI',  policies: 28, revenue: 168000 },
-  { company: 'Bajaj',  policies: 19, revenue: 114000 },
-  { company: 'SBI',    policies: 24, revenue: 144000 },
-  { company: 'Star',   policies: 15, revenue: 90000 },
-]
-
-const POLICY_PIE = [
-  { name: 'Life',    value: 42, color: '#3b82f6' },
-  { name: 'Health',  value: 28, color: '#22c55e' },
-  { name: 'Vehicle', value: 20, color: '#f59e0b' },
-  { name: 'Travel',  value: 10, color: '#8b5cf6' },
-]
+const MONTHLY_REVENUE = []
+const CUSTOMER_GROWTH = []
+const COMPANY_SALES = []
+const POLICY_PIE = []
 
 const SUMMARY_STATS = [
-  { label: 'Total Revenue (YTD)',  value: '₹9,55,500', change: '+18%' },
-  { label: 'New Customers (YTD)', value: '126',        change: '+22%' },
-  { label: 'Policies Sold (YTD)', value: '163',        change: '+15%' },
-  { label: 'Renewal Rate',        value: '87%',        change: '+4%' },
+  { label: 'Total Revenue (YTD)',  value: '—', change: '—' },
+  { label: 'New Customers (YTD)', value: '—',        change: '—' },
+  { label: 'Policies Sold (YTD)', value: '—',        change: '—' },
+  { label: 'Renewal Rate',        value: '—',        change: '—' },
 ]
 
 const TOOLTIP_STYLE = {

@@ -8,12 +8,7 @@
 import { useState } from 'react'
 import { notificationsAPI } from '../services/api'
 
-const MOCK_LOGS = [
-  { id: 1, channel: 'whatsapp', to: '9876543210', name: 'Rahul Sharma',    message: 'Your policy LIC-2024-001 expires in 7 days...', status: 'sent',   time: '2026-06-14 09:00' },
-  { id: 2, channel: 'sms',      to: '9123456780', name: 'Priya Patel',     message: 'ABC Insurance: Policy expires on 15 Jul...', status: 'sent',   time: '2026-06-14 09:01' },
-  { id: 3, channel: 'whatsapp', to: '9988776655', name: 'Amit Verma',      message: 'Hello Amit, your premium of ₹2200 is due...', status: 'sent',   time: '2026-06-13 09:00' },
-  { id: 4, channel: 'sms',      to: '9001234567', name: 'Sunita Joshi',    message: 'Policy SBI-2025-207 expires in 30 days.',    status: 'failed', time: '2026-06-13 09:01' },
-]
+const MOCK_LOGS = []
 
 const TEMPLATES = [
   {

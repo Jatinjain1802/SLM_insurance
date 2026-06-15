@@ -8,7 +8,7 @@
 const router  = require('express').Router()
 const multer  = require('multer')
 const path    = require('path')
-const { getByCustomer, upload, download, remove } = require('../controllers/document.controller')
+const { getAll, getByCustomer, upload, download, remove } = require('../controllers/document.controller')
 const { protect } = require('../middleware/auth.middleware')
 
 // Multer disk storage configuration
@@ -43,6 +43,7 @@ const uploadMiddleware = multer({
 })
 
 router.use(protect)
+router.get('/', getAll)
 router.get('/customer/:customerId', getByCustomer)
 router.post('/upload', uploadMiddleware.single('file'), upload) // 'file' = form field name
 router.get('/:id/download', download)

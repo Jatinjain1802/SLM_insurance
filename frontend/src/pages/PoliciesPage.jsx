@@ -10,15 +10,7 @@ import Modal from '../components/Modal'
 import Badge from '../components/Badge'
 import { policiesAPI, customersAPI, companiesAPI } from '../services/api'
 
-const MOCK_POLICIES = [
-  { id: 1, policyNumber: 'LIC-2024-001', customer: 'Rahul Sharma',    company: 'LIC',           type: 'Life',    premiumAmount: 5000, startDate: '2024-01-01', expiryDate: '2026-12-31', status: 'active' },
-  { id: 2, policyNumber: 'HDR-2025-042', customer: 'Priya Patel',     company: 'HDFC Life',     type: 'Health',  premiumAmount: 3500, startDate: '2025-07-01', expiryDate: '2026-07-15', status: 'active' },
-  { id: 3, policyNumber: 'BAJ-2023-118', customer: 'Amit Verma',      company: 'Bajaj Allianz', type: 'Vehicle', premiumAmount: 2200, startDate: '2023-09-01', expiryDate: '2025-09-30', status: 'expired' },
-  { id: 4, policyNumber: 'SBI-2025-207', customer: 'Sunita Joshi',    company: 'SBI Life',      type: 'Life',    premiumAmount: 6000, startDate: '2025-01-15', expiryDate: '2027-01-15', status: 'active' },
-  { id: 5, policyNumber: 'ICI-2025-334', customer: 'Deepak Malhotra', company: 'ICICI Lombard', type: 'Health',  premiumAmount: 4000, startDate: '2025-03-01', expiryDate: '2026-06-22', status: 'pending' },
-  { id: 6, policyNumber: 'LIC-2022-089', customer: 'Neha Singh',      company: 'LIC',           type: 'Life',    premiumAmount: 3000, startDate: '2022-06-01', expiryDate: '2025-06-01', status: 'expired' },
-  { id: 7, policyNumber: 'HDR-2024-156', customer: 'Vijay Kumar',     company: 'HDFC Life',     type: 'Travel',  premiumAmount: 1500, startDate: '2024-12-01', expiryDate: '2026-11-30', status: 'active' },
-]
+// Mock policies removed in favor of API
 
 const EMPTY_FORM = {
   policyNumber: '', customerId: '', companyId: '', type: '',
@@ -29,7 +21,7 @@ const POLICY_TYPES = ['Life', 'Health', 'Vehicle', 'Travel', 'Home', 'Term']
 const FREQUENCIES = ['monthly', 'quarterly', 'half-yearly', 'yearly']
 
 function PoliciesPage() {
-  const [policies, setPolicies] = useState(MOCK_POLICIES)
+  const [policies, setPolicies] = useState([])
   const [customers, setCustomers] = useState([])
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(false)
@@ -51,7 +43,9 @@ function PoliciesPage() {
         setPolicies(polRes.data)
         setCustomers(custRes.data)
         setCompanies(compRes.data)
-      } catch { /* use mock data */ }
+      } catch (err) {
+        console.error('Failed to fetch data for policies page', err)
+      }
       finally { setLoading(false) }
     }
     fetchAll()
@@ -95,12 +89,9 @@ function PoliciesPage() {
         setPolicies([res.data, ...policies])
       }
       setModalOpen(false)
-    } catch {
-      if (editPolicy) {
-        setPolicies(policies.map(p => p.id === editPolicy.id ? { ...p, ...form } : p))
-      } else {
-        setPolicies([{ id: Date.now(), ...form, customer: 'New Customer', company: 'Company' }, ...policies])
-      }
+    } catch (err) {
+      console.error('Save failed', err)
+      alert(err.response?.data?.message || 'Failed to save policy.')
       setModalOpen(false)
     } finally {
       setSaving(false)
@@ -114,9 +105,9 @@ function PoliciesPage() {
     { key: 'policyNumber', label: 'Policy No.',
       render: (v) => <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--text-accent)' }}>{v}</span>
     },
-    { key: 'customer', label: 'Customer' },
-    { key: 'company',  label: 'Company' },
-    { key: 'type', label: 'Type',
+    { key: 'customer', label: 'Customer', render: (_, r) => r.customer?.name || '—' },
+    { key: 'company',  label: 'Company',  render: (_, r) => r.company?.name || '—' },
+    { key: 'policyType', label: 'Type',
       render: (v) => <span style={{ fontSize: 12, fontWeight: 500 }}>{v}</span>
     },
     { key: 'premiumAmount', label: 'Premium',
@@ -187,8 +178,22 @@ function PoliciesPage() {
                 <input name="policyNumber" className="form-control" value={form.policyNumber} onChange={handleChange} placeholder="LIC-2026-001" required style={{ textTransform: 'uppercase' }} />
               </div>
               <div className="form-group">
+                <label className="form-label">Customer <span className="form-required">*</span></label>
+                <select name="customerId" className="form-control" value={form.customerId} onChange={handleChange} required>
+                  <option value="">Select customer...</option>
+                  {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.mobile})</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Insurance Company <span className="form-required">*</span></label>
+                <select name="companyId" className="form-control" value={form.companyId} onChange={handleChange} required>
+                  <option value="">Select company...</option>
+                  {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
                 <label className="form-label">Policy Type <span className="form-required">*</span></label>
-                <select name="type" className="form-control" value={form.type} onChange={handleChange} required>
+                <select name="policyType" className="form-control" value={form.policyType || form.type} onChange={(e) => setForm({...form, policyType: e.target.value, type: e.target.value})} required>
                   <option value="">Select type...</option>
                   {POLICY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>

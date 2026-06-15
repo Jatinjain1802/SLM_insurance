@@ -104,6 +104,7 @@ export const companiesAPI = {
 // DOCUMENTS API CALLS
 // ============================================================
 export const documentsAPI = {
+  getAll: () => api.get('/documents'),
   getByCustomer: (customerId) => api.get(`/documents/customer/${customerId}`),
   upload: (formData) => api.post('/documents/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }

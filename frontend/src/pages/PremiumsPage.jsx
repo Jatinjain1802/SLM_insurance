@@ -9,19 +9,11 @@ import DataTable from '../components/DataTable'
 import Badge from '../components/Badge'
 import { premiumsAPI } from '../services/api'
 
-const MOCK_PREMIUMS = [
-  { id: 1, policyNumber: 'LIC-2024-001', customer: 'Rahul Sharma',    amount: 5000, dueDate: '2026-06-25', status: 'upcoming', daysLeft: 10 },
-  { id: 2, policyNumber: 'HDR-2025-042', customer: 'Priya Patel',     amount: 3500, dueDate: '2026-06-30', status: 'upcoming', daysLeft: 15 },
-  { id: 3, policyNumber: 'SBI-2025-207', customer: 'Sunita Joshi',    amount: 6000, dueDate: '2026-06-10', status: 'overdue',  daysLeft: -5 },
-  { id: 4, policyNumber: 'BAJ-2023-118', customer: 'Amit Verma',      amount: 2200, dueDate: '2026-05-31', status: 'overdue',  daysLeft: -15 },
-  { id: 5, policyNumber: 'LIC-2022-089', customer: 'Neha Singh',      amount: 3000, dueDate: '2026-05-15', status: 'paid',     daysLeft: 0 },
-  { id: 6, policyNumber: 'HDR-2024-156', customer: 'Vijay Kumar',     amount: 1500, dueDate: '2026-04-30', status: 'paid',     daysLeft: 0 },
-  { id: 7, policyNumber: 'ICI-2025-334', customer: 'Deepak Malhotra', amount: 4000, dueDate: '2026-07-15', status: 'upcoming', daysLeft: 30 },
-]
+// Mock premiums removed
 
 function PremiumsPage() {
-  const [premiums, setPremiums] = useState(MOCK_PREMIUMS)
-  const [loading, setLoading] = useState(false)
+  const [premiums, setPremiums] = useState([])
+  const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('upcoming')
   const [paying, setPaying] = useState(null)
 
@@ -34,7 +26,9 @@ function PremiumsPage() {
           premiumsAPI.getOverdue(),
         ])
         setPremiums([...upcomingRes.data, ...overdueRes.data])
-      } catch { /* use mock data */ }
+      } catch (err) {
+        console.error('Failed to fetch premiums', err)
+      }
       finally { setLoading(false) }
     }
     fetchPremiums()
@@ -46,10 +40,13 @@ function PremiumsPage() {
     setPaying(premium.id)
     try {
       await premiumsAPI.markPaid(premium.id)
-    } catch { /* mock update */ }
-    setPremiums(premiums.map(p =>
-      p.id === premium.id ? { ...p, status: 'paid' } : p
-    ))
+      setPremiums(premiums.map(p =>
+        p.id === premium.id ? { ...p, status: 'paid' } : p
+      ))
+    } catch (err) {
+      console.error('Failed to mark premium as paid', err)
+      alert(err.response?.data?.message || 'Failed to update status.')
+    }
     setPaying(null)
   }
 
@@ -64,9 +61,9 @@ function PremiumsPage() {
 
   const columns = [
     { key: 'policyNumber', label: 'Policy No.',
-      render: (v) => <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--text-accent)' }}>{v}</span>
+      render: (_, r) => <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--text-accent)' }}>{r.policy?.policyNumber || '—'}</span>
     },
-    { key: 'customer', label: 'Customer' },
+    { key: 'customer', label: 'Customer', render: (_, r) => r.policy?.customer?.name || '—' },
     { key: 'amount',   label: 'Premium',
       render: (v) => <span style={{ fontWeight: 700, fontSize: 15 }}>{formatCurrency(v)}</span>
     },
@@ -74,14 +71,14 @@ function PremiumsPage() {
       render: (v, row) => (
         <div>
           <div>{formatDate(v)}</div>
-          {row.status === 'upcoming' && row.daysLeft > 0 && (
-            <div style={{ fontSize: 11, color: row.daysLeft <= 7 ? 'var(--warning)' : 'var(--text-muted)' }}>
-              {row.daysLeft} days left
+          {row.status === 'upcoming' && (
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+              Upcoming
             </div>
           )}
           {row.status === 'overdue' && (
             <div style={{ fontSize: 11, color: 'var(--danger)' }}>
-              {Math.abs(row.daysLeft)} days overdue
+              Overdue
             </div>
           )}
         </div>
