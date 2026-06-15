@@ -48,7 +48,9 @@ const NAV_SECTIONS = [
 ]
 
 function Sidebar() {
-  const { user, logout } = useAuth()
+  const { user: authUser, logout } = useAuth()
+  // In demo mode there's no logged-in user, so we use a placeholder
+  const user = authUser || { name: 'Demo Owner', role: 'owner' }
   const navigate = useNavigate()
 
   // Get the user's initials for the avatar (e.g., "Rahul Sharma" → "RS")

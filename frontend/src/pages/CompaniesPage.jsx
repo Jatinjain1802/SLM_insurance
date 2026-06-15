@@ -5,22 +5,21 @@ import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
 import { companiesAPI } from '../services/api'
 
-const MOCK_COMPANIES = [
-  { id: 1, name: 'LIC',           code: 'LIC001', type: 'Life',    contact: '1800-33-0000', policies: 45 },
-  { id: 2, name: 'HDFC Life',     code: 'HDR002', type: 'Life',    contact: '1800-267-9999', policies: 32 },
-  { id: 3, name: 'ICICI Lombard', code: 'ICI003', type: 'General', contact: '1800-2666',    policies: 28 },
-  { id: 4, name: 'Bajaj Allianz', code: 'BAJ004', type: 'General', contact: '1800-209-5858', policies: 19 },
-  { id: 5, name: 'SBI Life',      code: 'SBI005', type: 'Life',    contact: '1800-267-9090', policies: 24 },
-  { id: 6, name: 'Star Health',   code: 'STR006', type: 'Health',  contact: '1800-425-2255', policies: 15 },
-]
-
 const COMPANY_TYPES = ['Life', 'General', 'Health', 'Travel']
 const TYPE_COLORS = { Life: '#3b82f6', General: '#f59e0b', Health: '#22c55e', Travel: '#8b5cf6' }
 
-const EMPTY_FORM = { name: '', code: '', type: '', contact: '' }
+const EMPTY_FORM = { name: '', code: '', type: '', contactDetails: '' }
 
 function CompaniesPage() {
-  const [companies, setCompanies] = useState(MOCK_COMPANIES)
+  const [companies, setCompanies] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    companiesAPI.getAll()
+      .then(res => setCompanies(res.data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false))
+  }, [])
   const [modalOpen, setModalOpen] = useState(false)
   const [editCompany, setEditCompany] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
@@ -33,7 +32,7 @@ function CompaniesPage() {
   )
 
   const openAddModal = () => { setEditCompany(null); setForm(EMPTY_FORM); setModalOpen(true) }
-  const openEditModal = (c) => { setEditCompany(c); setForm({ name: c.name, code: c.code, type: c.type, contact: c.contact }); setModalOpen(true) }
+  const openEditModal = (c) => { setEditCompany(c); setForm({ name: c.name, code: c.code, type: c.type, contactDetails: c.contactDetails || '' }); setModalOpen(true) }
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
   const handleSave = async (e) => {
@@ -116,12 +115,9 @@ function CompaniesPage() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Contact</span>
-                <span style={{ fontWeight: 500 }}>{company.contact}</span>
+                <span style={{ fontWeight: 500 }}>{company.contactDetails || '—'}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Policies</span>
-                <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{company.policies}</span>
-              </div>
+              {/* Policy count can be added later if needed via backend aggregate */}
             </div>
           </div>
         ))}
@@ -158,7 +154,7 @@ function CompaniesPage() {
             </div>
             <div className="form-group">
               <label className="form-label">Contact Number</label>
-              <input name="contact" className="form-control" value={form.contact} onChange={handleChange} placeholder="1800-XXXXXX" />
+              <input name="contactDetails" className="form-control" value={form.contactDetails} onChange={handleChange} placeholder="1800-XXXXXX" />
             </div>
           </div>
           <div className="modal-footer">

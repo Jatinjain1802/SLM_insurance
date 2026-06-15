@@ -27,10 +27,18 @@ import ReportsPage         from './pages/ReportsPage'
 import NotificationsPage   from './pages/NotificationsPage'
 import SettingsPage        from './pages/SettingsPage'
 
+// ======================================================
+// DEMO_MODE: set to true to skip login and view all pages
+// Set to false when backend is ready and auth is wired up
+// ======================================================
+const DEMO_MODE = false
+
 // ProtectedRoute: wraps pages that require login
-// If not authenticated, redirects to /login
+// In DEMO_MODE → always allows access
+// In production → redirects to /login if not authenticated
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth()
+  if (DEMO_MODE) return children  // ← remove this line when backend is ready
   return isAuthenticated ? children : <Navigate to="/login" replace />
 }
 
@@ -53,9 +61,10 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Public route — redirect to dashboard if already logged in */}
+      {/* In DEMO_MODE, /login still works but root goes straight to dashboard */}
       <Route
         path="/login"
-        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />}
+        element={DEMO_MODE ? <Navigate to="/dashboard" replace /> : (isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />)}
       />
 
       {/* Protected routes — require login */}

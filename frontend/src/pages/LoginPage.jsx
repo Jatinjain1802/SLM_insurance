@@ -50,7 +50,7 @@ function LoginPage() {
 
   // Demo login — fills in test credentials for quick access
   const handleDemoLogin = () => {
-    setForm({ email: 'owner@slm.com', password: 'demo123' })
+    setForm({ email: 'admin@slm.com', password: 'password123' })
   }
 
   return (
