@@ -14,15 +14,16 @@
 const { Op } = require('sequelize')
 const { Customer, Policy, User } = require('../models')
 
-// GET /api/customers
-// Returns all customers (agents only see their own customers)
 const getAllCustomers = async (req, res) => {
   try {
+    const page = parseInt(req.query.page, 10) || 1
+    const limit = parseInt(req.query.limit, 10) || 10
+    const offset = (page - 1) * limit
+
     const where = {}
 
     // ROLE-BASED FILTER:
     // If the user is an agent, only show their assigned customers
-    // If owner or admin, show all customers
     if (req.user.role === 'agent') {
       where.assignedAgentId = req.user.id
     }
@@ -36,14 +37,16 @@ const getAllCustomers = async (req, res) => {
       ]
     }
 
-    const customers = await Customer.findAll({
+    const { count, rows } = await Customer.findAndCountAll({
       where,
-      // Include policy count using a separate association
+      limit,
+      offset,
+      distinct: true, // important when using includes
       include: [
         {
           model: Policy,
           as: 'policies',
-          attributes: ['id', 'status'], // only fetch id and status, not all fields
+          attributes: ['id', 'status'], // only fetch id and status
         },
         {
           model: User,
@@ -54,7 +57,12 @@ const getAllCustomers = async (req, res) => {
       order: [['createdAt', 'DESC']], // newest first
     })
 
-    res.json(customers)
+    res.json({
+      data: rows,
+      totalItems: count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page
+    })
   } catch (error) {
     res.status(500).json({ message: 'Error fetching customers.', error: error.message })
   }

@@ -22,8 +22,28 @@ const { startReminderJob } = require('./jobs/reminder.job')
 const app = express()
 
 // ============================================================
-// MIDDLEWARE
+// MIDDLEWARE (SECURITY & PARSING)
 // ============================================================
+
+// Import security modules
+const helmet = require('helmet')
+const rateLimit = require('express-rate-limit')
+
+// 1. Set Security HTTP Headers
+app.use(helmet())
+// Configure helmet to allow images from our uploads folder or cross-origin if needed
+app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }))
+
+// 2. Global Rate Limiter: maximum 100 requests per 15 minutes per IP
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, 
+  message: { message: 'Too many requests from this IP, please try again after 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+// Apply rate limiter to all API routes
+app.use('/api', apiLimiter)
 
 // Enable CORS so our React frontend (port 5173) can talk to this backend (port 5000)
 app.use(corsPkg({

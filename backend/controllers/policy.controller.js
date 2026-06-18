@@ -12,6 +12,10 @@ const agentFilter = (user) => {
 // GET /api/policies
 const getAllPolicies = async (req, res) => {
   try {
+    const page = parseInt(req.query.page, 10) || 1
+    const limit = parseInt(req.query.limit, 10) || 10
+    const offset = (page - 1) * limit
+
     const include = [
       {
         model: Customer,
@@ -30,8 +34,21 @@ const getAllPolicies = async (req, res) => {
     const where = {}
     if (req.query.status) where.status = req.query.status
 
-    const policies = await Policy.findAll({ where, include, order: [['createdAt', 'DESC']] })
-    res.json(policies)
+    const { count, rows } = await Policy.findAndCountAll({ 
+      where, 
+      include, 
+      limit, 
+      offset,
+      distinct: true,
+      order: [['createdAt', 'DESC']] 
+    })
+
+    res.json({
+      data: rows,
+      totalItems: count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page
+    })
   } catch (error) {
     res.status(500).json({ message: 'Error fetching policies.', error: error.message })
   }

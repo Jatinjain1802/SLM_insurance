@@ -8,7 +8,9 @@ import { useState, useEffect } from 'react'
 import DataTable from '../components/DataTable'
 import Modal from '../components/Modal'
 import Badge from '../components/Badge'
+import Pagination from '../components/Pagination'
 import { policiesAPI, customersAPI, companiesAPI } from '../services/api'
+import { FiEdit2 } from 'react-icons/fi'
 
 // Mock policies removed in favor of API
 
@@ -25,6 +27,8 @@ function PoliciesPage() {
   const [customers, setCustomers] = useState([])
   const [companies, setCompanies] = useState([])
   const [loading, setLoading] = useState(false)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
   const [activeTab, setActiveTab] = useState('all')
   const [modalOpen, setModalOpen] = useState(false)
   const [editPolicy, setEditPolicy] = useState(null)
@@ -36,12 +40,14 @@ function PoliciesPage() {
       setLoading(true)
       try {
         const [polRes, custRes, compRes] = await Promise.all([
-          policiesAPI.getAll(),
-          customersAPI.getAll(),
+          policiesAPI.getAll({ page, limit: 10 }),
+          customersAPI.getAll({ limit: 100 }), // We might need all customers for the dropdown, passing high limit for now
           companiesAPI.getAll(),
         ])
-        setPolicies(polRes.data)
-        setCustomers(custRes.data)
+        setPolicies(polRes.data.data)
+        setTotalPages(polRes.data.totalPages)
+        // Check if customers data is paginated or not
+        setCustomers(custRes.data.data || custRes.data)
         setCompanies(compRes.data)
       } catch (err) {
         console.error('Failed to fetch data for policies page', err)
@@ -49,7 +55,7 @@ function PoliciesPage() {
       finally { setLoading(false) }
     }
     fetchAll()
-  }, [])
+  }, [page])
 
   // Filter policies based on active tab
   const filtered = activeTab === 'all'
@@ -86,7 +92,10 @@ function PoliciesPage() {
         setPolicies(policies.map(p => p.id === editPolicy.id ? { ...p, ...form } : p))
       } else {
         const res = await policiesAPI.create(form)
-        setPolicies([res.data, ...policies])
+        const newPolicy = res.data
+        newPolicy.customer = customers.find(c => c.id == form.customerId) || { name: 'Unknown' }
+        newPolicy.company = companies.find(c => c.id == form.companyId) || { name: 'Unknown' }
+        setPolicies([newPolicy, ...policies])
       }
       setModalOpen(false)
     } catch (err) {
@@ -129,8 +138,12 @@ function PoliciesPage() {
     },
     { key: 'actions', label: '',
       render: (_, row) => (
-        <button className="btn btn-secondary btn-sm" onClick={(e) => { e.stopPropagation(); openEditModal(row) }}>
-          ✏️ Edit
+        <button 
+          className="btn btn-secondary btn-sm" 
+          onClick={(e) => { e.stopPropagation(); openEditModal(row) }}
+          style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+        >
+          <FiEdit2 /> Edit
         </button>
       )
     }
@@ -166,6 +179,12 @@ function PoliciesPage() {
         searchPlaceholder="Search policies..."
         emptyMessage="No policies found"
         emptyIcon="📋"
+      />
+
+      <Pagination 
+        currentPage={page} 
+        totalPages={totalPages} 
+        onPageChange={setPage} 
       />
 
       {/* Add / Edit Modal */}

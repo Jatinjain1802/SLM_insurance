@@ -7,42 +7,47 @@
 
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { 
+  FiPieChart, FiUsers, FiFileText, FiDollarSign, 
+  FiBriefcase, FiFolder, FiTrendingUp, FiBell, 
+  FiSettings, FiShield 
+} from 'react-icons/fi'
 
-// Navigation items — each has a path, icon (emoji), and label
+// Navigation items — each has a path, icon (component), and label
 // Grouped into sections for visual clarity
 const NAV_SECTIONS = [
   {
     label: 'Overview',
     items: [
-      { path: '/dashboard',     icon: '📊', label: 'Dashboard' },
+      { path: '/dashboard',     icon: <FiPieChart />, label: 'Dashboard' },
     ]
   },
   {
     label: 'Management',
     items: [
-      { path: '/customers',     icon: '👥', label: 'Customers' },
-      { path: '/policies',      icon: '📋', label: 'Policies' },
-      { path: '/premiums',      icon: '💰', label: 'Premiums' },
-      { path: '/companies',     icon: '🏢', label: 'Companies' },
+      { path: '/customers',     icon: <FiUsers />, label: 'Customers' },
+      { path: '/policies',      icon: <FiFileText />, label: 'Policies' },
+      { path: '/premiums',      icon: <FiDollarSign />, label: 'Premiums' },
+      { path: '/companies',     icon: <FiBriefcase />, label: 'Companies' },
     ]
   },
   {
     label: 'Documents & Reports',
     items: [
-      { path: '/documents',     icon: '📁', label: 'Documents' },
-      { path: '/reports',       icon: '📈', label: 'Reports' },
+      { path: '/documents',     icon: <FiFolder />, label: 'Documents' },
+      { path: '/reports',       icon: <FiTrendingUp />, label: 'Reports' },
     ]
   },
   {
     label: 'Communication',
     items: [
-      { path: '/notifications', icon: '🔔', label: 'Notifications' },
+      { path: '/notifications', icon: <FiBell />, label: 'Notifications' },
     ]
   },
   {
     label: 'System',
     items: [
-      { path: '/settings',      icon: '⚙️', label: 'Settings' },
+      { path: '/settings',      icon: <FiSettings />, label: 'Settings' },
     ]
   }
 ]
@@ -72,7 +77,7 @@ function Sidebar() {
     <aside className="sidebar">
       {/* ---- Logo / Brand ---- */}
       <div className="sidebar-logo">
-        <div className="sidebar-logo-icon">🛡️</div>
+        <div className="sidebar-logo-icon" style={{ display: 'flex', alignItems: 'center' }}><FiShield size={24} /></div>
         <div className="sidebar-logo-text">
           <span className="brand">SLM Insurance</span>
           <span className="tagline">CRM Platform</span>

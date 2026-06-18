@@ -10,7 +10,9 @@ import { useNavigate } from 'react-router-dom'
 import DataTable from '../components/DataTable'
 import Modal from '../components/Modal'
 import Badge from '../components/Badge'
+import Pagination from '../components/Pagination'
 import { customersAPI } from '../services/api'
+import { FiEdit2, FiTrash2 } from 'react-icons/fi'
 
 // Removed MOCK_CUSTOMERS array
 
@@ -22,6 +24,8 @@ function CustomersPage() {
   const navigate = useNavigate()
   const [customers, setCustomers] = useState([])
   const [loading, setLoading] = useState(false)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
   const [modalOpen, setModalOpen] = useState(false)
   const [editCustomer, setEditCustomer] = useState(null) // null = Add mode, object = Edit mode
   const [form, setForm] = useState(EMPTY_FORM)
@@ -33,8 +37,9 @@ function CustomersPage() {
     const fetchCustomers = async () => {
       setLoading(true)
       try {
-        const res = await customersAPI.getAll()
-        setCustomers(res.data)
+        const res = await customersAPI.getAll({ page, limit: 10 })
+        setCustomers(res.data.data)
+        setTotalPages(res.data.totalPages)
       } catch (err) {
         console.error('Failed to fetch customers', err)
       } finally {
@@ -42,7 +47,7 @@ function CustomersPage() {
       }
     }
     fetchCustomers()
-  }, [])
+  }, [page])
 
   // Open modal for ADDING a new customer
   const openAddModal = () => {
@@ -165,14 +170,15 @@ function CustomersPage() {
           <button
             className="btn btn-secondary btn-sm"
             onClick={(e) => { e.stopPropagation(); openEditModal(row) }}
+            style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
           >
-            ✏️ Edit
+            <FiEdit2 /> Edit
           </button>
           <button
             className="btn btn-danger btn-sm"
             onClick={(e) => { e.stopPropagation(); setDeleteConfirm(row) }}
           >
-            🗑️
+            <FiTrash2 />
           </button>
         </div>
       )
@@ -199,6 +205,12 @@ function CustomersPage() {
         emptyMessage="No customers found"
         emptyIcon="👥"
         onRowClick={(row) => navigate(`/customers/${row.id}`)}
+      />
+
+      <Pagination 
+        currentPage={page} 
+        totalPages={totalPages} 
+        onPageChange={setPage} 
       />
 
       {/* ---- Add / Edit Modal ---- */}
@@ -266,8 +278,8 @@ function CustomersPage() {
         </div>
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={() => setDeleteConfirm(null)}>Cancel</button>
-          <button className="btn btn-danger" onClick={() => handleDelete(deleteConfirm)}>
-            🗑️ Yes, Delete
+          <button className="btn btn-danger" onClick={() => handleDelete(deleteConfirm)} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <FiTrash2 /> Yes, Delete
           </button>
         </div>
       </Modal>

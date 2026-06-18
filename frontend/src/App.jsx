@@ -10,35 +10,30 @@
 //   - If user is NOT logged in → redirect to /login
 // This prevents unauthorized access to dashboard pages.
 
+import React, { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Sidebar from './components/Sidebar'
+import Loader from './components/Loader'
+import { FiAlertCircle } from 'react-icons/fi'
 
-// Pages
-import LoginPage           from './pages/LoginPage'
-import DashboardPage       from './pages/DashboardPage'
-import CustomersPage       from './pages/CustomersPage'
-import CustomerDetailPage  from './pages/CustomerDetailPage'
-import PoliciesPage        from './pages/PoliciesPage'
-import PremiumsPage        from './pages/PremiumsPage'
-import CompaniesPage       from './pages/CompaniesPage'
-import DocumentsPage       from './pages/DocumentsPage'
-import ReportsPage         from './pages/ReportsPage'
-import NotificationsPage   from './pages/NotificationsPage'
-import SettingsPage        from './pages/SettingsPage'
-
-// ======================================================
-// DEMO_MODE: set to true to skip login and view all pages
-// Set to false when backend is ready and auth is wired up
-// ======================================================
-const DEMO_MODE = false
+// Pages (Lazy Loaded)
+const LoginPage           = lazy(() => import('./pages/LoginPage'))
+const DashboardPage       = lazy(() => import('./pages/DashboardPage'))
+const CustomersPage       = lazy(() => import('./pages/CustomersPage'))
+const CustomerDetailPage  = lazy(() => import('./pages/CustomerDetailPage'))
+const PoliciesPage        = lazy(() => import('./pages/PoliciesPage'))
+const PremiumsPage        = lazy(() => import('./pages/PremiumsPage'))
+const CompaniesPage       = lazy(() => import('./pages/CompaniesPage'))
+const DocumentsPage       = lazy(() => import('./pages/DocumentsPage'))
+const ReportsPage         = lazy(() => import('./pages/ReportsPage'))
+const NotificationsPage   = lazy(() => import('./pages/NotificationsPage'))
+const SettingsPage        = lazy(() => import('./pages/SettingsPage'))
 
 // ProtectedRoute: wraps pages that require login
-// In DEMO_MODE → always allows access
-// In production → redirects to /login if not authenticated
+// Redirects to /login if not authenticated
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth()
-  if (DEMO_MODE) return children  // ← remove this line when backend is ready
   return isAuthenticated ? children : <Navigate to="/login" replace />
 }
 
@@ -59,13 +54,13 @@ function AppRoutes() {
   const { isAuthenticated } = useAuth()
 
   return (
-    <Routes>
-      {/* Public route — redirect to dashboard if already logged in */}
-      {/* In DEMO_MODE, /login still works but root goes straight to dashboard */}
-      <Route
-        path="/login"
-        element={DEMO_MODE ? <Navigate to="/dashboard" replace /> : (isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />)}
-      />
+    <Suspense fallback={<Loader />}>
+      <Routes>
+        {/* Public route — redirect to dashboard if already logged in */}
+        <Route
+          path="/login"
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />}
+        />
 
       {/* Protected routes — require login */}
       <Route path="/dashboard" element={
@@ -138,13 +133,14 @@ function AppRoutes() {
           justifyContent: 'center', minHeight: '100vh', gap: '16px',
           background: 'var(--bg-base)', color: 'var(--text-primary)'
         }}>
-          <div style={{ fontSize: 64 }}>🔍</div>
+          <FiAlertCircle size={64} color="var(--primary-500)" />
           <h1 style={{ fontSize: 32, fontWeight: 800 }}>404</h1>
           <p style={{ color: 'var(--text-secondary)' }}>Page not found</p>
           <a href="/dashboard" className="btn btn-primary">Go to Dashboard</a>
         </div>
       } />
     </Routes>
+  </Suspense>
   )
 }
 
