@@ -7,8 +7,9 @@
 import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
 import HighlightText from '../components/HighlightText'
+import FilterBar from '../components/FilterBar'
 import { documentsAPI, customersAPI } from '../services/api'
-import { FiFileText, FiCreditCard, FiFile, FiEdit3, FiFolder, FiSearch, FiDownload, FiTrash2 } from 'react-icons/fi'
+import { FiDownload, FiTrash2, FiFileText, FiUploadCloud, FiFile, FiEdit3, FiFolder, FiCreditCard } from 'react-icons/fi'
 
 // MOCK_DOCS removed in favor of real API
 
@@ -126,13 +127,15 @@ function DocumentsPage() {
           <p className="page-subtitle">{docs.length} documents stored</p>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <div className="search-bar">
-            <span className="search-bar-icon"><FiSearch /></span>
-            <input className="search-input" placeholder="Search documents..." value={search} onChange={e => setSearch(e.target.value)} />
-          </div>
           <button className="btn btn-primary" onClick={() => setModalOpen(true)}>↑ Upload Document</button>
         </div>
       </div>
+
+      <FilterBar 
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search documents..."
+      />
 
       {/* Document Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>

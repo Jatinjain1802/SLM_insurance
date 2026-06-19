@@ -9,6 +9,7 @@
 
 import { useState } from 'react'
 import HighlightText from './HighlightText'
+import FilterBar from './FilterBar'
 import { FiSearch } from 'react-icons/fi'
 
 function DataTable({
@@ -45,51 +46,18 @@ function DataTable({
     <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
       {/* Search Bar + Actions Row */}
       {(searchable || actions) && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '16px 20px',
-            borderBottom: '1px solid var(--bg-border)',
-            flexWrap: 'wrap',
-            gap: '12px',
+        <FilterBar 
+          search={search}
+          onSearchChange={(val) => {
+            setSearch(val)
+            setCurrentPage(1)
           }}
-        >
-          {searchable && (
-            <div className="search-bar">
-              <span className="search-bar-icon"><FiSearch /></span>
-              <input
-                className="search-input"
-                type="text"
-                placeholder={searchPlaceholder}
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value)
-                  setCurrentPage(1) // Reset to page 1 on new search
-                }}
-              />
-            </div>
-          )}
-          
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            {filterOptions.length > 0 && (
-              <div className="filter-dropdown">
-                <select 
-                  className="form-control" 
-                  value={activeFilter} 
-                  onChange={(e) => onFilterChange && onFilterChange(e.target.value)}
-                  style={{ minWidth: '120px', padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--bg-border)', background: 'var(--bg-base)' }}
-                >
-                  {filterOptions.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-            {actions && <div>{actions}</div>}
-          </div>
-        </div>
+          searchPlaceholder={searchPlaceholder}
+          filterOptions={filterOptions}
+          activeFilter={activeFilter}
+          onFilterChange={onFilterChange}
+          actions={actions}
+        />
       )}
 
       {/* Table */}

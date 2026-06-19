@@ -64,10 +64,17 @@ function DashboardPage() {
   return (
     <div className="page-container page-fade-in">
       {/* Header */}
-      <div className="page-header">
-        <div>
-          <h1>Dashboard</h1>
-          <p className="page-subtitle">Welcome back! Here's your business overview.</p>
+      <div className="page-header" style={{ display: 'flex', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <img 
+            src="/SLM_Logo.png" 
+            alt="SLM Financial Services" 
+            style={{ height: '60px', objectFit: 'contain' }} 
+          />
+          <div>
+            <h1>Dashboard</h1>
+            <p className="page-subtitle">Welcome back! Here's your business overview.</p>
+          </div>
         </div>
         <button
           className="btn btn-primary"

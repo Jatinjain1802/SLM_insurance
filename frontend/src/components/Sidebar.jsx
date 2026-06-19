@@ -78,11 +78,20 @@ function Sidebar() {
   return (
     <aside className="sidebar">
       {/* ---- Logo / Brand ---- */}
-      <div className="sidebar-logo">
-        <div className="sidebar-logo-icon" style={{ display: 'flex', alignItems: 'center' }}><FiShield size={24} /></div>
-        <div className="sidebar-logo-text">
-          <span className="brand">SLM Insurance</span>
-          <span className="tagline">CRM Platform</span>
+      <div className="sidebar-logo" style={{ display: 'flex', justifyContent: 'center', padding: '10px 0', marginBottom: '10px' }}>
+        <div style={{ 
+          background: theme === 'dark' ? 'rgba(255,255,255,0.95)' : 'transparent',
+          padding: theme === 'dark' ? '8px 16px' : '0',
+          borderRadius: '8px',
+          display: 'flex',
+          justifyContent: 'center',
+          transition: 'all 0.3s ease'
+        }}>
+          <img 
+            src="/SLM_Logo.png" 
+            alt="SLM Financial Services" 
+            style={{ width: '100%', maxWidth: '160px', objectFit: 'contain' }} 
+          />
         </div>
       </div>
 

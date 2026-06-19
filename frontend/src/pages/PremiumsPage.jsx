@@ -64,7 +64,7 @@ function PremiumsPage() {
     },
     { key: 'customer', label: 'Customer', render: (_, r, s) => <HighlightText text={r.policy?.customer?.name || '—'} highlight={s} /> },
     { key: 'amount',   label: 'Premium',
-      render: (v) => <span style={{ fontWeight: 700, fontSize: 15 }}>{formatCurrency(v)}</span>
+      render: (v, r, s) => <span style={{ fontWeight: 700, fontSize: 15 }}><HighlightText text={formatCurrency(v)} highlight={s} /></span>
     },
     { key: 'dueDate',  label: 'Due Date',
       render: (v, row) => (
