@@ -8,6 +8,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend
 } from 'recharts'
+import { FiDownload } from 'react-icons/fi'
 
 const TOOLTIP_STYLE = {
   contentStyle: {
@@ -22,6 +23,7 @@ const TOOLTIP_STYLE = {
 function ReportsPage() {
   const [period, setPeriod] = useState('6m')
   const [loading, setLoading] = useState(true)
+  const [exporting, setExporting] = useState(false)
   const [data, setData] = useState({
     monthlyRevenue: [],
     customerGrowth: [],
@@ -82,12 +84,38 @@ function ReportsPage() {
           <h1>Reports & Analytics</h1>
           <p className="page-subtitle">Business performance overview</p>
         </div>
-        <div className="tabs" style={{ marginBottom: 0 }}>
-          {['6m', '1y', 'all'].map(p => (
-            <button key={p} className={`tab-btn ${period === p ? 'active' : ''}`} onClick={() => setPeriod(p)}>
-              {p === '6m' ? 'Last 6 Months' : p === '1y' ? 'Last Year' : 'All Time'}
-            </button>
-          ))}
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <div className="tabs" style={{ marginBottom: 0 }}>
+            {['6m', '1y', 'all'].map(p => (
+              <button key={p} className={`tab-btn ${period === p ? 'active' : ''}`} onClick={() => setPeriod(p)}>
+                {p === '6m' ? 'Last 6 Months' : p === '1y' ? 'Last Year' : 'All Time'}
+              </button>
+            ))}
+          </div>
+          <button 
+            className="btn btn-primary" 
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+            disabled={exporting}
+            onClick={async () => {
+              try {
+                setExporting(true)
+                const res = await reportsAPI.exportCsv()
+                const url = window.URL.createObjectURL(new Blob([res.data]))
+                const link = document.createElement('a')
+                link.href = url
+                link.setAttribute('download', 'SLM_Comprehensive_Report.csv')
+                document.body.appendChild(link)
+                link.click()
+                link.remove()
+              } catch (err) {
+                alert('Failed to export CSV.')
+              } finally {
+                setExporting(false)
+              }
+            }}
+          >
+            <FiDownload /> {exporting ? 'Exporting...' : 'Export CSV'}
+          </button>
         </div>
       </div>
 

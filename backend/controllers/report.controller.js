@@ -82,4 +82,59 @@ const triggerReminders = async (req, res) => {
   }
 }
 
-module.exports = { getCustomerReport, getPolicyReport, getRevenueReport, triggerReminders }
+// GET /api/reports/export-csv
+const exportCsvReport = async (req, res) => {
+  try {
+    const policies = await Policy.findAll({
+      include: [
+        { model: Customer, as: 'customer', attributes: ['name', 'mobile'] },
+        { model: InsuranceCompany, as: 'company', attributes: ['name'] }
+      ],
+      order: [['createdAt', 'DESC']]
+    })
+
+    // Define CSV headers
+    const headers = [
+      'Policy Number', 'Customer Name', 'Customer Mobile', 'Company Name',
+      'Policy Type', 'Premium Amount', 'Payment Frequency', 'Start Date', 'Expiry Date', 'Status'
+    ]
+
+    // Helper to safely escape CSV fields (wrap in quotes if contains comma)
+    const escapeCsv = (field) => {
+      if (field === null || field === undefined) return ''
+      const stringField = String(field)
+      if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+        return `"${stringField.replace(/"/g, '""')}"`
+      }
+      return stringField
+    }
+
+    // Map rows to CSV strings
+    const rows = policies.map(p => {
+      return [
+        p.policyNumber,
+        p.customer ? p.customer.name : 'Unknown',
+        p.customer ? p.customer.mobile : 'Unknown',
+        p.company ? p.company.name : 'Unknown',
+        p.policyType,
+        p.premiumAmount,
+        p.paymentFrequency,
+        p.startDate || '',
+        p.expiryDate,
+        p.status
+      ].map(escapeCsv).join(',')
+    })
+
+    // Combine headers and rows
+    const csvContent = [headers.join(','), ...rows].join('\n')
+
+    res.setHeader('Content-Type', 'text/csv')
+    res.setHeader('Content-Disposition', 'attachment; filename="SLM_Comprehensive_Report.csv"')
+    
+    return res.send(csvContent)
+  } catch (error) {
+    res.status(500).json({ message: 'Error generating CSV export.', error: error.message })
+  }
+}
+
+module.exports = { getCustomerReport, getPolicyReport, getRevenueReport, triggerReminders, exportCsvReport }

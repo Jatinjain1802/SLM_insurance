@@ -134,6 +134,7 @@ export const reportsAPI = {
   getCustomerReport: () => api.get('/reports/customers'),
   getPolicyReport: () => api.get('/reports/policies'),
   getRevenueReport: () => api.get('/reports/revenue'),
+  exportCsv: () => api.get('/reports/export-csv', { responseType: 'blob' }),
 }
 
 // ============================================================
