@@ -8,6 +8,8 @@
 // axios.post(url, data, { headers }) = HTTP POST request with headers
 
 const axios = require('axios')
+const fs = require('fs')
+const FormData = require('form-data')
 const { MessageLog } = require('../models')
 
 // Base URL for Meta WhatsApp API (v19.0 is stable)
@@ -222,4 +224,77 @@ Thank you for your continued trust in SLM Insurance. 🙏
   return sendTextMessage(customer.mobile, message, customer.id)
 }
 
-module.exports = { sendTextMessage, sendInteractiveList, sendInteractiveButton, sendExpiryReminder, sendRenewalConfirmation }
+// ============================================================
+// Send a secure Document to a WhatsApp number via Meta Media API
+// ============================================================
+const sendDocument = async (to, filePath, filename, customerId = null) => {
+  try {
+    // 1. Securely upload the document to Meta's servers (not publicly accessible)
+    const form = new FormData()
+    form.append('messaging_product', 'whatsapp')
+    form.append('file', fs.createReadStream(filePath))
+    form.append('type', 'application/pdf')
+
+    const mediaRes = await axios.post(
+      `${WA_API_URL}/${process.env.WHATSAPP_PHONE_ID}/media`,
+      form,
+      {
+        headers: {
+          ...form.getHeaders(),
+          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+        },
+      }
+    )
+
+    const mediaId = mediaRes.data.id
+
+    // 2. Deliver the uploaded document securely to the user's WhatsApp
+    const msgRes = await axios.post(
+      `${WA_API_URL}/${process.env.WHATSAPP_PHONE_ID}/messages`,
+      {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: to,
+        type: 'document',
+        document: {
+          id: mediaId,
+          filename: filename
+        }
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    )
+
+    await MessageLog.create({
+      mobile:     to,
+      channel:    'whatsapp',
+      direction:  'outbound',
+      message:    `[Document: ${filename}]`,
+      status:     'sent',
+      customerId,
+      externalId: msgRes.data?.messages?.[0]?.id,
+    })
+
+    console.log(`✅ WhatsApp secure document sent to ${to}`)
+    return { success: true, data: msgRes.data }
+
+  } catch (error) {
+    await MessageLog.create({
+      mobile:    to,
+      channel:   'whatsapp',
+      direction: 'outbound',
+      message:   `[Document Failed: ${filename}]`,
+      status:    'failed',
+      customerId,
+    }).catch(() => {})
+
+    console.error(`❌ WhatsApp document failed to ${to}:`, error.response?.data || error.message)
+    return { success: false, error: error.response?.data || error.message }
+  }
+}
+
+module.exports = { sendTextMessage, sendInteractiveList, sendInteractiveButton, sendExpiryReminder, sendRenewalConfirmation, sendDocument }

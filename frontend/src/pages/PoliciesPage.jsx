@@ -4,8 +4,10 @@ import Modal from '../components/Modal'
 import Badge from '../components/Badge'
 import Pagination from '../components/Pagination'
 import StatCard from '../components/StatCard'
+import HighlightText from '../components/HighlightText'
+import ViewPolicyModal from '../components/ViewPolicyModal'
 import { policiesAPI, customersAPI, companiesAPI } from '../services/api'
-import { FiEdit2, FiEye } from 'react-icons/fi'
+import { FiEdit2, FiEye, FiPlus, FiFilter, FiClipboard } from 'react-icons/fi'
 
 // Mock policies removed in favor of API
 
@@ -33,6 +35,8 @@ function PoliciesPage() {
   // View Details State
   const [viewPolicy, setViewPolicy] = useState(null)
   const [viewModalOpen, setViewModalOpen] = useState(false)
+  
+  const [activeTypeFilter, setActiveTypeFilter] = useState('all')
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -56,16 +60,26 @@ function PoliciesPage() {
     fetchAll()
   }, [page])
 
-  // Filter policies based on active tab
+  // Filter policies based on active tab and type filter
+  const filteredByType = activeTypeFilter === 'all' 
+    ? policies 
+    : policies.filter(p => p.policyType === activeTypeFilter)
+
   const filtered = activeTab === 'all'
-    ? policies
-    : policies.filter(p => p.status === activeTab)
+    ? filteredByType
+    : filteredByType.filter(p => p.status === activeTab)
 
   const TABS = [
-    { key: 'all',     label: `All (${policies.length})` },
-    { key: 'active',  label: `Active (${policies.filter(p => p.status === 'active').length})` },
-    { key: 'expired', label: `Expired (${policies.filter(p => p.status === 'expired').length})` },
-    { key: 'pending', label: `Pending (${policies.filter(p => p.status === 'pending').length})` },
+    { key: 'all',     label: `All (${filteredByType.length})` },
+    { key: 'active',  label: `Active (${filteredByType.filter(p => p.status === 'active').length})` },
+    { key: 'renewed', label: `Renewed (${filteredByType.filter(p => p.status === 'renewed').length})` },
+    { key: 'expired', label: `Expired (${filteredByType.filter(p => p.status === 'expired').length})` },
+    { key: 'pending', label: `Pending (${filteredByType.filter(p => p.status === 'pending').length})` },
+  ]
+  
+  const TYPE_OPTIONS = [
+    { label: 'All Types', value: 'all' },
+    ...POLICY_TYPES.map(t => ({ label: t, value: t }))
   ]
 
   const openAddModal = () => {
@@ -121,12 +135,12 @@ function PoliciesPage() {
 
   const columns = [
     { key: 'policyNumber', label: 'Policy No.',
-      render: (v) => <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--text-accent)' }}>{v}</span>
+      render: (v, r, s) => <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--text-accent)' }}><HighlightText text={v} highlight={s} /></span>
     },
-    { key: 'customer', label: 'Customer', render: (_, r) => r.customer?.name || '—' },
-    { key: 'company',  label: 'Company',  render: (_, r) => r.company?.name || '—' },
+    { key: 'customer', label: 'Customer', render: (_, r, s) => <HighlightText text={r.customer?.name || '—'} highlight={s} /> },
+    { key: 'company',  label: 'Company',  render: (_, r, s) => <HighlightText text={r.company?.name || '—'} highlight={s} /> },
     { key: 'policyType', label: 'Type',
-      render: (v) => <span style={{ fontSize: 12, fontWeight: 500 }}>{v}</span>
+      render: (v, r, s) => <span style={{ fontSize: 12, fontWeight: 500 }}><HighlightText text={v} highlight={s} /></span>
     },
     { key: 'premiumAmount', label: 'Premium',
       render: (v) => <span style={{ fontWeight: 600 }}>{formatCurrency(v)}</span>
@@ -197,7 +211,10 @@ function PoliciesPage() {
         loading={loading}
         searchPlaceholder="Search policies..."
         emptyMessage="No policies found"
-        emptyIcon="📋"
+        emptyIcon={<FiClipboard />}
+        filterOptions={TYPE_OPTIONS}
+        activeFilter={activeTypeFilter}
+        onFilterChange={setActiveTypeFilter}
       />
 
       <Pagination 
@@ -270,96 +287,11 @@ function PoliciesPage() {
           </div>
         </form>
       </Modal>
-      {/* View Details Modal */}
-      {viewPolicy && (
-        <Modal isOpen={viewModalOpen} onClose={() => setViewModalOpen(false)} title="Policy Details & Premium Analytics" size="lg">
-          <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            
-            {/* Analytics Cards */}
-            {(() => {
-              // Calculate Duration
-              let totalMonths = 'N/A'
-              if (viewPolicy.startDate && viewPolicy.expiryDate) {
-                const start = new Date(viewPolicy.startDate)
-                const end = new Date(viewPolicy.expiryDate)
-                totalMonths = Math.max(1, Math.round((end - start) / (1000 * 60 * 60 * 24 * 30.44))) + ' Months'
-              }
-
-              // Calculate Premiums
-              const premiums = viewPolicy.premiums || []
-              const paidCount = premiums.filter(p => p.status === 'paid').length
-              const pendingCount = premiums.filter(p => p.status !== 'paid').length
-
-              return (
-                <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-                  <StatCard 
-                    label="Policy Duration" 
-                    value={totalMonths} 
-                    icon="📅" 
-                    color="blue" 
-                  />
-                  <StatCard 
-                    label="Paid Premiums" 
-                    value={paidCount} 
-                    icon="✅" 
-                    color="green" 
-                  />
-                  <StatCard 
-                    label="Pending / Overdue" 
-                    value={pendingCount} 
-                    icon="⏳" 
-                    color="orange" 
-                  />
-                </div>
-              )
-            })()}
-
-            {/* Detailed Info Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', background: 'var(--bg-elevated)', padding: '20px', borderRadius: '8px', border: '1px solid var(--bg-border)' }}>
-              
-              {/* Customer Info */}
-              <div>
-                <h4 style={{ margin: '0 0 10px 0', color: 'var(--text-muted)', fontSize: '12px', textTransform: 'uppercase' }}>Customer Info</h4>
-                <p style={{ margin: '4px 0', fontWeight: 500 }}>{viewPolicy.customer?.name}</p>
-                <p style={{ margin: '4px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>{viewPolicy.customer?.mobile}</p>
-                <p style={{ margin: '4px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>{viewPolicy.customer?.email}</p>
-              </div>
-
-              {/* Policy Schedule */}
-              <div>
-                <h4 style={{ margin: '0 0 10px 0', color: 'var(--text-muted)', fontSize: '12px', textTransform: 'uppercase' }}>Schedule & Details</h4>
-                <p style={{ margin: '4px 0', fontWeight: 500 }}>{viewPolicy.policyNumber} <Badge status={viewPolicy.status} /></p>
-                <p style={{ margin: '4px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>Type: {viewPolicy.policyType}</p>
-                <p style={{ margin: '4px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>Start Date: {formatDate(viewPolicy.startDate)}</p>
-                <p style={{ margin: '4px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>End (Expiry): {formatDate(viewPolicy.expiryDate)}</p>
-              </div>
-
-              {/* Financials */}
-              {(() => {
-                const totalPaidAmount = (viewPolicy.premiums || [])
-                  .filter(p => p.status === 'paid')
-                  .reduce((sum, p) => sum + Number(p.amount), 0)
-
-                return (
-                  <div>
-                    <h4 style={{ margin: '0 0 10px 0', color: 'var(--text-muted)', fontSize: '12px', textTransform: 'uppercase' }}>Financials</h4>
-                    <p style={{ margin: '4px 0', fontWeight: 500 }}>Premium Cost: {formatCurrency(viewPolicy.premiumAmount)}</p>
-                    <p style={{ margin: '4px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>Frequency: <span style={{textTransform: 'capitalize'}}>{viewPolicy.paymentFrequency}</span></p>
-                    <p style={{ margin: '4px 0', fontSize: '13px', color: 'var(--text-secondary)' }}>Company: {viewPolicy.company?.name}</p>
-                    <p style={{ margin: '4px 0', fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600, color: 'var(--success)' }}>
-                      Total Paid: {formatCurrency(totalPaidAmount)}
-                    </p>
-                  </div>
-                )
-              })()}
-            </div>
-
-          </div>
-          <div className="modal-footer">
-            <button className="btn btn-primary" onClick={() => setViewModalOpen(false)}>Close</button>
-          </div>
-        </Modal>
-      )}
+      <ViewPolicyModal 
+        isOpen={viewModalOpen} 
+        onClose={() => setViewModalOpen(false)} 
+        viewPolicy={viewPolicy} 
+      />
     </div>
   )
 }

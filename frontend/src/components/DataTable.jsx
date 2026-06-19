@@ -8,6 +8,8 @@
 // The "render" function in a column lets you customize how a cell looks.
 
 import { useState } from 'react'
+import HighlightText from './HighlightText'
+import { FiSearch } from 'react-icons/fi'
 
 function DataTable({
   columns = [],
@@ -19,6 +21,9 @@ function DataTable({
   emptyMessage = 'No data found',
   emptyIcon = '📭',
   actions,           // Optional: element to render on the right of search bar
+  filterOptions = [], // Optional: array of { label, value } for a filter dropdown
+  activeFilter = '',
+  onFilterChange,
 }) {
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -53,7 +58,7 @@ function DataTable({
         >
           {searchable && (
             <div className="search-bar">
-              <span className="search-bar-icon">🔍</span>
+              <span className="search-bar-icon"><FiSearch /></span>
               <input
                 className="search-input"
                 type="text"
@@ -66,7 +71,24 @@ function DataTable({
               />
             </div>
           )}
-          {actions && <div>{actions}</div>}
+          
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {filterOptions.length > 0 && (
+              <div className="filter-dropdown">
+                <select 
+                  className="form-control" 
+                  value={activeFilter} 
+                  onChange={(e) => onFilterChange && onFilterChange(e.target.value)}
+                  style={{ minWidth: '120px', padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--bg-border)', background: 'var(--bg-base)' }}
+                >
+                  {filterOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {actions && <div>{actions}</div>}
+          </div>
         </div>
       )}
 
@@ -109,8 +131,10 @@ function DataTable({
                 >
                   {columns.map((col) => (
                     <td key={col.key}>
-                      {/* If column has a custom render function, use it; otherwise show raw value */}
-                      {col.render ? col.render(row[col.key], row) : row[col.key]}
+                      {/* If column has a custom render function, pass search term; otherwise use HighlightText */}
+                      {col.render 
+                        ? col.render(row[col.key], row, search) 
+                        : <HighlightText text={row[col.key]} highlight={search} />}
                     </td>
                   ))}
                 </tr>

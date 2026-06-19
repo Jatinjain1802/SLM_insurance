@@ -26,6 +26,55 @@ const create = async (req, res) => {
   }
 }
 
+// POST /api/companies/bulk
+const createBulk = async (req, res) => {
+  try {
+    const { companies } = req.body
+    
+    if (!companies || !Array.isArray(companies) || companies.length === 0) {
+      return res.status(400).json({ message: 'No companies provided for bulk upload.' })
+    }
+
+    let successCount = 0
+    let skipCount = 0
+    let errors = []
+
+    for (const data of companies) {
+      const { name, code, type, contactDetails } = data
+      
+      if (!name || !code || !type) {
+        skipCount++
+        errors.push(`Row skipped: Missing name, code, or type.`)
+        continue
+      }
+
+      const existing = await InsuranceCompany.findOne({ where: { code } })
+      if (existing) {
+        skipCount++
+        errors.push(`Row skipped: Company code ${code} already exists.`)
+        continue
+      }
+
+      try {
+        await InsuranceCompany.create({ name, code, type, contactDetails })
+        successCount++
+      } catch (err) {
+        skipCount++
+        errors.push(`Error saving company ${code}: ${err.message}`)
+      }
+    }
+
+    res.status(201).json({
+      message: 'Bulk upload completed.',
+      successCount,
+      skipCount,
+      errors
+    })
+  } catch (error) {
+    res.status(500).json({ message: 'Error processing bulk upload.', error: error.message })
+  }
+}
+
 const update = async (req, res) => {
   try {
     const company = await InsuranceCompany.findByPk(req.params.id)
@@ -48,4 +97,4 @@ const remove = async (req, res) => {
   }
 }
 
-module.exports = { getAll, create, update, remove }
+module.exports = { getAll, create, update, remove, createBulk }

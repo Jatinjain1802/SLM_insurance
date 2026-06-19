@@ -9,8 +9,8 @@
 // Key = mobile number, Value = { step, selectedPolicyIndex }
 
 const { Op } = require('sequelize')
-const { Customer, Policy, Premium, InsuranceCompany, User } = require('../models')
-const { sendTextMessage, sendInteractiveList, sendInteractiveButton } = require('./whatsapp.service')
+const { Customer, Policy, Premium, InsuranceCompany, User, Document } = require('../models')
+const { sendTextMessage, sendInteractiveList, sendInteractiveButton, sendDocument } = require('./whatsapp.service')
 
 // In-memory conversation state store
 // LEARNING NOTE: In production, use Redis for this (persists across server restarts)
@@ -98,6 +98,11 @@ const handleIncomingMessage = async (from, messageText) => {
     // ---- POLICY LIST: waiting for user to pick a policy ----
     case 'policy_select':
       await handlePolicySelection(from, text, customer, state)
+      break
+
+    // ---- DOCUMENT LIST: waiting for user to pick a policy to download ----
+    case 'document_select':
+      await handleDocumentSelection(from, text, customer, state)
       break
 
     default:
@@ -194,7 +199,16 @@ const handleMenuChoice = async (from, choice, customer) => {
     }
 
     case '4': {
-      await sendTextWithMenuButton(from, `📥 *Policy Documents*\n\nTo download your policy documents, please contact your agent:\n\n👤 ${customer.assignedAgent?.name || 'Your Agent'}\n📧 ${customer.assignedAgent?.email || 'Contact us at documents@slminsurance.com'}`, customer.id)
+      if (policies.length === 0) {
+        await sendTextWithMenuButton(from, `You don't have any policies registered to download documents for.`, customer.id)
+        return
+      }
+      const list = policies.map((p, i) =>
+        `${i + 1}. *${p.policyNumber}* — ${p.company?.name || ''} (₹${Number(p.premiumAmount).toLocaleString('en-IN')})`
+      ).join('\n\n')
+
+      await sendTextWithMenuButton(from, `📥 *Download Policy Document*\n\nPlease reply with the *number* of the policy you want to download:\n\n${list}`, customer.id)
+      conversationState.set(from, { step: 'document_select' })
       break
     }
 
@@ -220,7 +234,7 @@ const handlePolicySelection = async (from, choice, customer, state) => {
   const index = parseInt(choice) - 1
   const policies = customer.policies || []
 
-  if (index < 0 || index >= policies.length) {
+  if (isNaN(index) || index < 0 || index >= policies.length) {
     await sendTextWithMenuButton(from, `Invalid choice. Please enter a number between 1 and ${policies.length}.`, customer.id)
     return
   }
@@ -232,6 +246,46 @@ const handlePolicySelection = async (from, choice, customer, state) => {
 
   const msg = `📋 *Policy Details*\n\nPolicy No: *${policy.policyNumber}*\nType: ${policy.policyType}\nCompany: ${company}\nPremium: ₹${premium}\nExpiry: ${expiry}\nStatus: ${policy.status.toUpperCase()}`
   await sendTextWithMenuButton(from, msg, customer.id)
+  conversationState.set(from, { step: 'menu' })
+}
+
+// ============================================================
+// Handle document selection (option 4)
+// ============================================================
+const handleDocumentSelection = async (from, choice, customer, state) => {
+  const index = parseInt(choice) - 1
+  const policies = customer.policies || []
+
+  if (isNaN(index) || index < 0 || index >= policies.length) {
+    await sendTextWithMenuButton(from, `Invalid choice. Please enter a number between 1 and ${policies.length}.`, customer.id)
+    return
+  }
+
+  const policy = policies[index]
+  
+  await sendTextMessage(from, `⏳ Retrieving your securely encrypted policy document for *${policy.policyNumber}*...`, customer.id)
+  
+  const doc = await Document.findOne({
+    where: { policyId: policy.id, docType: 'Policy PDF' },
+    order: [['createdAt', 'DESC']]
+  })
+
+  if (!doc) {
+    await sendTextWithMenuButton(from, `Sorry, the Policy PDF for *${policy.policyNumber}* has not been uploaded to the system yet. Please contact your agent.`, customer.id)
+    conversationState.set(from, { step: 'menu' })
+    return
+  }
+
+  const result = await sendDocument(from, doc.filePath, doc.fileName, customer.id)
+  
+  if (result.success) {
+    setTimeout(() => {
+      sendTextWithMenuButton(from, `✅ Document sent successfully.`, customer.id)
+    }, 1500)
+  } else {
+    await sendTextWithMenuButton(from, `❌ Failed to securely retrieve the document. Please contact support.`, customer.id)
+  }
+
   conversationState.set(from, { step: 'menu' })
 }
 

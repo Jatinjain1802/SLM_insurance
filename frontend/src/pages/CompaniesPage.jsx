@@ -3,7 +3,10 @@
 
 import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
+import HighlightText from '../components/HighlightText'
+import CompanyBulkUploadModal from '../components/CompanyBulkUploadModal'
 import { companiesAPI } from '../services/api'
+import { FiSearch, FiEdit2, FiTrash2, FiBriefcase, FiUploadCloud } from 'react-icons/fi'
 
 const COMPANY_TYPES = ['Life', 'General', 'Health', 'Travel']
 const TYPE_COLORS = { Life: '#3b82f6', General: '#f59e0b', Health: '#22c55e', Travel: '#8b5cf6' }
@@ -25,6 +28,25 @@ function CompaniesPage() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
+  const [bulkModalOpen, setBulkModalOpen] = useState(false)
+
+  const handleBulkUploadComplete = async (companiesData) => {
+    try {
+      const res = await companiesAPI.bulkCreate(companiesData)
+      let msg = `Upload complete!\nSuccess: ${res.data.successCount}\nSkipped: ${res.data.skipCount}`
+      if (res.data.errors && res.data.errors.length > 0) {
+        msg += `\n\nErrors:\n${res.data.errors.slice(0, 5).join('\n')}`
+        if (res.data.errors.length > 5) msg += `\n...and ${res.data.errors.length - 5} more.`
+      }
+      alert(msg)
+      
+      const fetchRes = await companiesAPI.getAll()
+      setCompanies(fetchRes.data)
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to bulk upload companies.')
+      throw err
+    }
+  }
 
   const filtered = companies.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -74,9 +96,12 @@ function CompaniesPage() {
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <div className="search-bar">
-            <span className="search-bar-icon">🔍</span>
+            <span className="search-bar-icon"><FiSearch /></span>
             <input className="search-input" placeholder="Search companies..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
+          <button className="btn btn-secondary" onClick={() => setBulkModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <FiUploadCloud /> Bulk Upload CSV
+          </button>
           <button className="btn btn-primary" onClick={openAddModal}>+ Add Company</button>
         </div>
       </div>
@@ -95,13 +120,13 @@ function CompaniesPage() {
                 🏢
               </div>
               <div style={{ display: 'flex', gap: '6px' }}>
-                <button className="btn-icon" onClick={() => openEditModal(company)} title="Edit">✏️</button>
-                <button className="btn-icon" onClick={() => handleDelete(company)} title="Delete">🗑️</button>
+                <button className="btn-icon" onClick={() => openEditModal(company)} title="Edit"><FiEdit2 /></button>
+                <button className="btn-icon" onClick={() => handleDelete(company)} title="Delete"><FiTrash2 /></button>
               </div>
             </div>
 
-            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>{company.name}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>Code: {company.code}</div>
+            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}><HighlightText text={company.name} highlight={search} /></div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>Code: <HighlightText text={company.code} highlight={search} /></div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
@@ -111,11 +136,11 @@ function CompaniesPage() {
                   fontWeight: 600, fontSize: 12,
                   background: `${TYPE_COLORS[company.type] || '#3b82f6'}15`,
                   padding: '2px 8px', borderRadius: '9999px'
-                }}>{company.type}</span>
+                }}><HighlightText text={company.type} highlight={search} /></span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Contact</span>
-                <span style={{ fontWeight: 500 }}>{company.contactDetails || '—'}</span>
+                <span style={{ fontWeight: 500 }}><HighlightText text={company.contactDetails || '—'} highlight={search} /></span>
               </div>
               {/* Policy count can be added later if needed via backend aggregate */}
             </div>
@@ -165,6 +190,13 @@ function CompaniesPage() {
           </div>
         </form>
       </Modal>
+
+      {/* ---- Bulk Upload Modal ---- */}
+      <CompanyBulkUploadModal 
+        isOpen={bulkModalOpen} 
+        onClose={() => setBulkModalOpen(false)} 
+        onUploadComplete={handleBulkUploadComplete} 
+      />
     </div>
   )
 }

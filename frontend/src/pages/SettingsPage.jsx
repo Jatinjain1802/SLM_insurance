@@ -3,6 +3,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { FiUser, FiKey, FiBell, FiMessageSquare, FiSmartphone, FiAlertTriangle, FiCheck } from 'react-icons/fi'
 
 function SettingsPage() {
   const { user } = useAuth()
@@ -46,13 +47,13 @@ function SettingsPage() {
         </div>
       </div>
 
-      {saved && <div className="alert alert-success" style={{ marginBottom: 20 }}>✓ Settings saved successfully!</div>}
+      {saved && <div className="alert alert-success" style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: '8px' }}><FiCheck /> Settings saved successfully!</div>}
 
       <div className="tabs">
         {[
-          { key: 'profile',   label: '👤 Profile' },
-          { key: 'api',       label: '🔑 API Keys' },
-          { key: 'reminders', label: '🔔 Auto Reminders' },
+          { key: 'profile',   label: <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FiUser /> Profile</span> },
+          { key: 'api',       label: <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FiKey /> API Keys</span> },
+          { key: 'reminders', label: <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FiBell /> Auto Reminders</span> },
         ].map(tab => (
           <button key={tab.key} className={`tab-btn ${activeTab === tab.key ? 'active' : ''}`} onClick={() => setActiveTab(tab.key)}>
             {tab.label}
@@ -74,7 +75,7 @@ function SettingsPage() {
                 <InputRow label="Agency Name" name="agencyName" value={profile.agencyName} onChange={e => setProfile({ ...profile, agencyName: e.target.value })} />
               </div>
               <div style={{ marginTop: 8 }}>
-                <button type="submit" className="btn btn-primary">✓ Save Profile</button>
+                <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FiCheck /> Save Profile</button>
               </div>
             </form>
           </div>
@@ -87,7 +88,7 @@ function SettingsPage() {
           <div className="card" style={{ marginBottom: 20 }}>
             <div className="card-header">
               <div>
-                <div className="card-title">💬 WhatsApp Cloud API</div>
+                <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FiMessageSquare /> WhatsApp Cloud API</div>
                 <div className="card-subtitle">Meta Business Manager credentials</div>
               </div>
               <a href="https://developers.facebook.com/apps/" target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm">
@@ -109,7 +110,7 @@ function SettingsPage() {
                   <input type="password" className="form-control" value={apiKeys.whatsappVerifyToken} onChange={e => setApiKeys({ ...apiKeys, whatsappVerifyToken: e.target.value })} placeholder="your_verify_token" />
                 </div>
               </div>
-              <button type="submit" className="btn btn-primary">✓ Save WhatsApp Config</button>
+              <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FiCheck /> Save WhatsApp Config</button>
             </form>
           </div>
 
@@ -117,7 +118,7 @@ function SettingsPage() {
           <div className="card">
             <div className="card-header">
               <div>
-                <div className="card-title">📱 Fast2SMS (SMS)</div>
+                <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FiSmartphone /> Fast2SMS (SMS)</div>
                 <div className="card-subtitle">India SMS gateway</div>
               </div>
               <a href="https://www.fast2sms.com/" target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm">
@@ -129,10 +130,10 @@ function SettingsPage() {
                 <label className="form-label">Fast2SMS API Key</label>
                 <input type="password" className="form-control" value={apiKeys.fast2smsKey} onChange={e => setApiKeys({ ...apiKeys, fast2smsKey: e.target.value })} placeholder="your-fast2sms-api-key" />
               </div>
-              <div className="alert alert-warning" style={{ marginBottom: 12, fontSize: 12 }}>
-                ⚠️ SMS will only be sent when your Fast2SMS account has sufficient credits.
+              <div className="alert alert-warning" style={{ marginBottom: 12, fontSize: 12, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FiAlertTriangle /> SMS will only be sent when your Fast2SMS account has sufficient credits.
               </div>
-              <button type="submit" className="btn btn-primary">✓ Save SMS Config</button>
+              <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FiCheck /> Save SMS Config</button>
             </form>
           </div>
         </div>
@@ -142,14 +143,14 @@ function SettingsPage() {
         <div style={{ maxWidth: 560 }}>
           <div className="card">
             <div className="card-header">
-              <div className="card-title">🔔 Automatic Reminder Schedule</div>
+              <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FiBell /> Automatic Reminder Schedule</div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {[
                 { days: 30, channel: 'WhatsApp only',    color: 'var(--info)',    enabled: true },
                 { days: 15, channel: 'WhatsApp + SMS',   color: 'var(--warning)', enabled: true },
                 { days: 7,  channel: 'WhatsApp + SMS',   color: 'var(--warning)', enabled: true },
-                { days: 1,  channel: 'WhatsApp + SMS 🚨', color: 'var(--danger)',  enabled: true },
+                { days: 1,  channel: 'WhatsApp + SMS', color: 'var(--danger)',  enabled: true },
               ].map(rule => (
                 <div key={rule.days} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',

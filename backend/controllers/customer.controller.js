@@ -120,6 +120,60 @@ const createCustomer = async (req, res) => {
   }
 }
 
+// POST /api/customers/bulk
+const createBulkCustomers = async (req, res) => {
+  try {
+    const { customers } = req.body
+    
+    if (!customers || !Array.isArray(customers) || customers.length === 0) {
+      return res.status(400).json({ message: 'No customers provided for bulk upload.' })
+    }
+
+    let successCount = 0
+    let skipCount = 0
+    let errors = []
+
+    for (const data of customers) {
+      const { name, mobile, email, address, dob, aadhaar, pan, assignedAgentId } = data
+      
+      // Basic validation
+      if (!name || !mobile) {
+        skipCount++
+        errors.push(`Row skipped: Missing name or mobile.`)
+        continue
+      }
+
+      // Check if mobile already exists
+      const existing = await Customer.findOne({ where: { mobile } })
+      if (existing) {
+        skipCount++
+        errors.push(`Row skipped: Mobile ${mobile} already exists.`)
+        continue
+      }
+
+      try {
+        await Customer.create({
+          name, mobile, email, address, dob, aadhaar, pan,
+          assignedAgentId: assignedAgentId || (req.user.role === 'agent' ? req.user.id : null),
+        })
+        successCount++
+      } catch (err) {
+        skipCount++
+        errors.push(`Error saving mobile ${mobile}: ${err.message}`)
+      }
+    }
+
+    res.status(201).json({
+      message: 'Bulk upload completed.',
+      successCount,
+      skipCount,
+      errors
+    })
+  } catch (error) {
+    res.status(500).json({ message: 'Error processing bulk upload.', error: error.message })
+  }
+}
+
 // PUT /api/customers/:id
 const updateCustomer = async (req, res) => {
   try {
@@ -150,4 +204,4 @@ const deleteCustomer = async (req, res) => {
   }
 }
 
-module.exports = { getAllCustomers, getCustomerById, createCustomer, updateCustomer, deleteCustomer }
+module.exports = { getAllCustomers, getCustomerById, createCustomer, updateCustomer, deleteCustomer, createBulkCustomers }

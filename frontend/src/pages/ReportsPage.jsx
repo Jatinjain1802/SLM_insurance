@@ -1,24 +1,13 @@
 // pages/ReportsPage.jsx
 // Charts for: Revenue, Policy distribution, Customer growth, Company-wise sales
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { reportsAPI } from '../services/api'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend
 } from 'recharts'
-
-const MONTHLY_REVENUE = []
-const CUSTOMER_GROWTH = []
-const COMPANY_SALES = []
-const POLICY_PIE = []
-
-const SUMMARY_STATS = [
-  { label: 'Total Revenue (YTD)',  value: '—', change: '—' },
-  { label: 'New Customers (YTD)', value: '—',        change: '—' },
-  { label: 'Policies Sold (YTD)', value: '—',        change: '—' },
-  { label: 'Renewal Rate',        value: '—',        change: '—' },
-]
 
 const TOOLTIP_STYLE = {
   contentStyle: {
@@ -32,6 +21,59 @@ const TOOLTIP_STYLE = {
 
 function ReportsPage() {
   const [period, setPeriod] = useState('6m')
+  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState({
+    monthlyRevenue: [],
+    customerGrowth: [],
+    companySales: [],
+    policyPie: [],
+    summaryStats: [
+      { label: 'Total Revenue', value: '—', change: '—' },
+      { label: 'New Customers', value: '—', change: '—' },
+      { label: 'Active Policies', value: '—', change: '—' },
+      { label: 'Total Customers', value: '—', change: '—' },
+    ]
+  })
+
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        setLoading(true)
+        const [revRes, custRes, polRes] = await Promise.all([
+          reportsAPI.getRevenueReport(),
+          reportsAPI.getCustomerReport(),
+          reportsAPI.getPolicyReport()
+        ])
+        
+        const revData = revRes.data
+        const custData = custRes.data
+        const polData = polRes.data
+
+        setData({
+          monthlyRevenue: revData.monthlyRevenue || [],
+          customerGrowth: [{ month: 'This Month', new: custData.newThisMonth, total: custData.total }],
+          companySales: polData.byCompany ? polData.byCompany.map(c => ({ company: c.company, policies: c.policyCount, revenue: Number(c.totalRevenue) })) : [],
+          policyPie: [
+            { name: 'Active', value: polData.active, color: '#3b82f6' },
+            { name: 'Expired', value: polData.expired, color: '#ef4444' },
+            { name: 'Renewed', value: polData.renewed, color: '#22c55e' },
+            { name: 'Pending', value: polData.pending, color: '#f59e0b' }
+          ].filter(p => p.value > 0),
+          summaryStats: [
+            { label: 'Total Revenue',  value: '₹' + (revData.totalRevenue || 0).toLocaleString('en-IN'), change: 'Updated' },
+            { label: 'New Customers', value: custData.newThisMonth, change: 'This Month' },
+            { label: 'Active Policies', value: polData.active, change: 'Current' },
+            { label: 'Total Customers', value: custData.total, change: 'All time' },
+          ]
+        })
+      } catch (err) {
+        console.error('Failed to fetch reports:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchReports()
+  }, [])
 
   return (
     <div className="page-container page-fade-in">
@@ -51,7 +93,7 @@ function ReportsPage() {
 
       {/* Summary Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-        {SUMMARY_STATS.map(stat => (
+        {data.summaryStats.map(stat => (
           <div key={stat.label} className="card" style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 4 }}>{stat.value}</div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>{stat.label}</div>
@@ -69,7 +111,7 @@ function ReportsPage() {
           </div>
         </div>
         <ResponsiveContainer width="100%" height={260}>
-          <AreaChart data={MONTHLY_REVENUE}>
+          <AreaChart data={data.monthlyRevenue}>
             <defs>
               <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%"  stopColor="#3b82f6" stopOpacity={0.3} />
@@ -97,7 +139,7 @@ function ReportsPage() {
             </div>
           </div>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={CUSTOMER_GROWTH}>
+            <BarChart data={data.customerGrowth}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--bg-border)" />
               <XAxis dataKey="month" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -115,8 +157,8 @@ function ReportsPage() {
           </div>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
-              <Pie data={POLICY_PIE} cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={4} dataKey="value">
-                {POLICY_PIE.map(entry => <Cell key={entry.name} fill={entry.color} />)}
+              <Pie data={data.policyPie} cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={4} dataKey="value">
+                {data.policyPie.map(entry => <Cell key={entry.name} fill={entry.color} />)}
               </Pie>
               <Tooltip {...TOOLTIP_STYLE} formatter={v => [`${v}%`, 'Share']} />
               <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, color: 'var(--text-secondary)' }} />
@@ -142,8 +184,8 @@ function ReportsPage() {
               </tr>
             </thead>
             <tbody>
-              {COMPANY_SALES.sort((a, b) => b.revenue - a.revenue).map((c, idx) => {
-                const totalRev = COMPANY_SALES.reduce((s, x) => s + x.revenue, 0)
+              {data.companySales.sort((a, b) => b.revenue - a.revenue).map((c, idx) => {
+                const totalRev = data.companySales.reduce((s, x) => s + x.revenue, 0)
                 const share = ((c.revenue / totalRev) * 100).toFixed(1)
                 return (
                   <tr key={c.company}>

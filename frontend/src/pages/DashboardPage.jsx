@@ -13,6 +13,7 @@ import {
 } from 'recharts'
 import StatCard from '../components/StatCard'
 import { dashboardAPI } from '../services/api'
+import { FiUserPlus, FiFilePlus, FiUploadCloud, FiBell, FiCheckCircle, FiXCircle, FiDollarSign, FiTrendingUp, FiUsers } from 'react-icons/fi'
 
 const INITIAL_STATS = {
   totalCustomers: 0,
@@ -30,11 +31,11 @@ const INITIAL_STATS = {
 }
 
 const QUICK_ACTIONS = [
-  { icon: '👤', label: 'Add Customer',    path: '/customers' },
-  { icon: '📋', label: 'Add Policy',      path: '/policies' },
-  { icon: '📁', label: 'Upload Document', path: '/documents' },
-  { icon: '🔔', label: 'Send Reminder',   path: '/notifications' },
-  { icon: '📈', label: 'View Reports',    path: '/reports' },
+  { icon: <FiUserPlus />, label: 'Add Customer',    path: '/customers' },
+  { icon: <FiFilePlus />, label: 'Add Policy',      path: '/policies' },
+  { icon: <FiUploadCloud />, label: 'Upload Document', path: '/documents' },
+  { icon: <FiBell />, label: 'Send Reminder',   path: '/notifications' },
+  { icon: <FiTrendingUp />, label: 'View Reports',    path: '/reports' },
 ]
 
 function DashboardPage() {
@@ -89,7 +90,7 @@ function DashboardPage() {
         <StatCard
           label="Active Policies"
           value={stats.activePolicies}
-          icon="✅"
+          icon={<FiCheckCircle />}
           color="green"
           change="8% this month"
           changeType="up"
@@ -105,13 +106,13 @@ function DashboardPage() {
         <StatCard
           label="Expired Policies"
           value={stats.expiredPolicies}
-          icon="❌"
+          icon={<FiXCircle />}
           color="red"
         />
         <StatCard
           label="Monthly Revenue"
           value={formatCurrency(stats.monthlyRevenue)}
-          icon="💰"
+          icon={<FiDollarSign />}
           color="teal"
           change="6% this month"
           changeType="up"
@@ -219,8 +220,8 @@ function DashboardPage() {
         <div className="card">
           <div className="card-header">
             <div>
-              <div className="card-title">Renewal Trend</div>
-              <div className="card-subtitle">Renewed vs Expired policies</div>
+              <div className="card-title">Policy Status Trend</div>
+              <div className="card-subtitle">Active, Renewed vs Expired policies</div>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={200}>
@@ -229,6 +230,7 @@ function DashboardPage() {
               <XAxis dataKey="month" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--bg-border)', borderRadius: '8px', color: 'var(--text-primary)' }} />
+              <Bar dataKey="active" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Active" />
               <Bar dataKey="renewed" fill="#22c55e" radius={[4, 4, 0, 0]} name="Renewed" />
               <Bar dataKey="expired" fill="#ef4444" radius={[4, 4, 0, 0]} name="Expired" />
               <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '12px', color: 'var(--text-secondary)' }} />

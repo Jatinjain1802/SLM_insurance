@@ -32,8 +32,8 @@ const getStats = async (req, res) => {
       // Count all customers
       Customer.count(),
 
-      // Count active policies
-      Policy.count({ where: { status: 'active' } }),
+      // Count active policies (both newly active and renewed)
+      Policy.count({ where: { status: { [Op.in]: ['active', 'renewed'] } } }),
 
       // Count expired policies
       Policy.count({ where: { status: 'expired' } }),
@@ -41,7 +41,7 @@ const getStats = async (req, res) => {
       // Count policies expiring in next 30 days
       Policy.count({
         where: {
-          status:     'active',
+          status: { [Op.in]: ['active', 'renewed'] },
           expiryDate: { [Op.between]: [today, in30Days] },
         },
       }),
@@ -114,9 +114,10 @@ const getStats = async (req, res) => {
         const d = new Date(p.createdAt)
         return d.getMonth() === m.monthNum && d.getFullYear() === m.year
       })
-      const renewed = monthPolicies.filter(p => p.status === 'active').length
+      const active = monthPolicies.filter(p => p.status === 'active').length
+      const renewed = monthPolicies.filter(p => p.status === 'renewed').length
       const expired = monthPolicies.filter(p => p.status === 'expired').length
-      return { month: m.label, renewed, expired }
+      return { month: m.label, active, renewed, expired }
     })
 
     // 3. Policy Types

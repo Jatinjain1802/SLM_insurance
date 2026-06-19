@@ -69,6 +69,7 @@ export const customersAPI = {
   getAll: (params) => api.get('/customers', { params }),
   getById: (id) => api.get(`/customers/${id}`),
   create: (data) => api.post('/customers', data),
+  bulkCreate: (customers) => api.post('/customers/bulk', { customers }),
   update: (id, data) => api.put(`/customers/${id}`, data),
   delete: (id) => api.delete(`/customers/${id}`),
 }
@@ -101,6 +102,7 @@ export const premiumsAPI = {
 export const companiesAPI = {
   getAll: () => api.get('/companies'),
   create: (data) => api.post('/companies', data),
+  bulkCreate: (companies) => api.post('/companies/bulk', { companies }),
   update: (id, data) => api.put(`/companies/${id}`, data),
   delete: (id) => api.delete(`/companies/${id}`),
 }
@@ -115,6 +117,7 @@ export const documentsAPI = {
     headers: { 'Content-Type': 'multipart/form-data' }
   }),
   delete: (id) => api.delete(`/documents/${id}`),
+  download: (id) => api.get(`/documents/${id}/download`, { responseType: 'blob' }),
 }
 
 // ============================================================

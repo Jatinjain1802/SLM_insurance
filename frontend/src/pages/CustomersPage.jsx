@@ -11,8 +11,10 @@ import DataTable from '../components/DataTable'
 import Modal from '../components/Modal'
 import Badge from '../components/Badge'
 import Pagination from '../components/Pagination'
+import HighlightText from '../components/HighlightText'
+import BulkUploadModal from '../components/BulkUploadModal'
 import { customersAPI } from '../services/api'
-import { FiEdit2, FiTrash2 } from 'react-icons/fi'
+import { FiEdit2, FiTrash2, FiUsers, FiCheck, FiPlus, FiAlertTriangle, FiEye, FiUploadCloud } from 'react-icons/fi'
 
 // Removed MOCK_CUSTOMERS array
 
@@ -31,6 +33,7 @@ function CustomersPage() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null) // customer to delete
+  const [bulkModalOpen, setBulkModalOpen] = useState(false)
 
   // Fetch customers from API
   useEffect(() => {
@@ -115,12 +118,34 @@ function CustomersPage() {
     }
   }
 
+  // Handle bulk upload completion
+  const handleBulkUploadComplete = async (customersData) => {
+    try {
+      const res = await customersAPI.bulkCreate(customersData)
+      let msg = `Upload complete!\nSuccess: ${res.data.successCount}\nSkipped: ${res.data.skipCount}`
+      if (res.data.errors && res.data.errors.length > 0) {
+        msg += `\n\nErrors:\n${res.data.errors.slice(0, 5).join('\n')}`
+        if (res.data.errors.length > 5) msg += `\n...and ${res.data.errors.length - 5} more.`
+      }
+      alert(msg)
+      
+      // refresh customers list
+      setPage(1)
+      const fetchRes = await customersAPI.getAll({ page: 1, limit: 10 })
+      setCustomers(fetchRes.data.data)
+      setTotalPages(fetchRes.data.totalPages)
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to bulk upload customers.')
+      throw err // Let modal know it failed
+    }
+  }
+
   // Table columns definition
   const columns = [
     {
       key: 'name',
       label: 'Customer',
-      render: (val, row) => (
+      render: (val, row, search) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{
             width: 34, height: 34, borderRadius: '50%',
@@ -131,8 +156,8 @@ function CustomersPage() {
             {val?.charAt(0).toUpperCase()}
           </div>
           <div>
-            <div style={{ fontWeight: 500 }}>{val}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{row.email}</div>
+            <div style={{ fontWeight: 500 }}><HighlightText text={val} highlight={search} /></div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}><HighlightText text={row.email} highlight={search} /></div>
           </div>
         </div>
       )
@@ -164,8 +189,9 @@ function CustomersPage() {
           <button
             className="btn btn-secondary btn-sm"
             onClick={(e) => { e.stopPropagation(); navigate(`/customers/${row.id}`) }}
+            style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
           >
-            View
+            <FiEye /> View
           </button>
           <button
             className="btn btn-secondary btn-sm"
@@ -192,9 +218,14 @@ function CustomersPage() {
           <h1>Customers</h1>
           <p className="page-subtitle">{customers.length} total customers</p>
         </div>
-        <button className="btn btn-primary" onClick={openAddModal} id="add-customer-btn">
-          + Add Customer
-        </button>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button className="btn btn-secondary" onClick={() => setBulkModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <FiUploadCloud /> Bulk Upload CSV
+          </button>
+          <button className="btn btn-primary" onClick={openAddModal} id="add-customer-btn">
+            + Add Customer
+          </button>
+        </div>
       </div>
 
       <DataTable
@@ -203,7 +234,7 @@ function CustomersPage() {
         loading={loading}
         searchPlaceholder="Search by name, mobile, email..."
         emptyMessage="No customers found"
-        emptyIcon="👥"
+        emptyIcon={<FiUsers />}
         onRowClick={(row) => navigate(`/customers/${row.id}`)}
       />
 
@@ -258,7 +289,7 @@ function CustomersPage() {
               Cancel
             </button>
             <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? 'Saving...' : editCustomer ? '✓ Update Customer' : '+ Add Customer'}
+              {saving ? 'Saving...' : editCustomer ? <><FiCheck /> Update Customer</> : <><FiPlus /> Add Customer</>}
             </button>
           </div>
         </form>
@@ -272,7 +303,7 @@ function CustomersPage() {
       >
         <div className="modal-body">
           <div className="alert alert-error">
-            ⚠️ Are you sure you want to delete <strong>{deleteConfirm?.name}</strong>?
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FiAlertTriangle /> Are you sure you want to delete <strong>{deleteConfirm?.name}</strong>?</div>
             This will also delete all their policies and documents. This action cannot be undone.
           </div>
         </div>
@@ -283,6 +314,13 @@ function CustomersPage() {
           </button>
         </div>
       </Modal>
+
+      {/* ---- Bulk Upload Modal ---- */}
+      <BulkUploadModal 
+        isOpen={bulkModalOpen} 
+        onClose={() => setBulkModalOpen(false)} 
+        onUploadComplete={handleBulkUploadComplete} 
+      />
     </div>
   )
 }

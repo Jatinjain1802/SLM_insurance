@@ -7,7 +7,9 @@
 import { useState, useEffect } from 'react'
 import DataTable from '../components/DataTable'
 import Badge from '../components/Badge'
+import HighlightText from '../components/HighlightText'
 import { premiumsAPI } from '../services/api'
+import { FiAlertTriangle, FiCheckCircle, FiDollarSign } from 'react-icons/fi'
 
 // Mock premiums removed
 
@@ -58,9 +60,9 @@ function PremiumsPage() {
 
   const columns = [
     { key: 'policyNumber', label: 'Policy No.',
-      render: (_, r) => <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--text-accent)' }}>{r.policy?.policyNumber || '—'}</span>
+      render: (_, r, s) => <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--text-accent)' }}><HighlightText text={r.policy?.policyNumber || '—'} highlight={s} /></span>
     },
-    { key: 'customer', label: 'Customer', render: (_, r) => r.policy?.customer?.name || '—' },
+    { key: 'customer', label: 'Customer', render: (_, r, s) => <HighlightText text={r.policy?.customer?.name || '—'} highlight={s} /> },
     { key: 'amount',   label: 'Premium',
       render: (v) => <span style={{ fontWeight: 700, fontSize: 15 }}>{formatCurrency(v)}</span>
     },
@@ -113,7 +115,9 @@ function PremiumsPage() {
       {/* Alert for overdue */}
       {premiums.filter(p => p.status === 'overdue').length > 0 && (
         <div className="alert alert-error" style={{ marginBottom: '20px' }}>
-          ⚠️ <strong>{premiums.filter(p => p.status === 'overdue').length} overdue premiums</strong> need immediate attention.
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FiAlertTriangle /> <strong>{premiums.filter(p => p.status === 'overdue').length} overdue premiums</strong> need immediate attention.
+          </div>
           Consider sending WhatsApp/SMS reminders from the Notifications page.
         </div>
       )}
@@ -137,7 +141,7 @@ function PremiumsPage() {
         loading={loading}
         searchPlaceholder="Search premiums..."
         emptyMessage={`No ${activeTab} premiums`}
-        emptyIcon={activeTab === 'paid' ? '✅' : '💰'}
+        emptyIcon={activeTab === 'paid' ? <FiCheckCircle /> : <FiDollarSign />}
       />
     </div>
   )

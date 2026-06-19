@@ -6,12 +6,21 @@
 
 import { useState, useEffect } from 'react'
 import Modal from '../components/Modal'
+import HighlightText from '../components/HighlightText'
 import { documentsAPI, customersAPI } from '../services/api'
+import { FiFileText, FiCreditCard, FiFile, FiEdit3, FiFolder, FiSearch, FiDownload, FiTrash2 } from 'react-icons/fi'
 
 // MOCK_DOCS removed in favor of real API
 
 const DOC_TYPES = ['Policy PDF', 'Aadhaar', 'PAN', 'Premium Receipt', 'Proposal Form', 'Other']
-const DOC_ICONS = { 'Policy PDF': '📄', 'Aadhaar': '🪪', 'PAN': '💳', 'Premium Receipt': '🧾', 'Proposal Form': '📝', 'Other': '📁' }
+const DOC_ICONS = { 
+  'Policy PDF': <FiFileText />, 
+  'Aadhaar': <FiCreditCard />, 
+  'PAN': <FiCreditCard />, 
+  'Premium Receipt': <FiFile />, 
+  'Proposal Form': <FiEdit3 />, 
+  'Other': <FiFolder /> 
+}
 
 function DocumentsPage() {
   const [docs, setDocs] = useState([])
@@ -28,7 +37,7 @@ function DocumentsPage() {
       customersAPI.getAll(),
       documentsAPI.getAll()
     ]).then(([custRes, docRes]) => {
-      setCustomers(custRes.data)
+      setCustomers(custRes.data.data || custRes.data)
       setDocs(docRes.data.map(d => ({
         ...d,
         customerName: d.customer?.name,
@@ -90,6 +99,23 @@ function DocumentsPage() {
     }
   }
 
+  const handleSecureDownload = async (doc) => {
+    try {
+      const res = await documentsAPI.download(doc.id)
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: res.headers['content-type'] }))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', doc.fileName)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Download error:', err)
+      alert('Failed to securely download the document.')
+    }
+  }
+
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
   return (
@@ -101,7 +127,7 @@ function DocumentsPage() {
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <div className="search-bar">
-            <span className="search-bar-icon">🔍</span>
+            <span className="search-bar-icon"><FiSearch /></span>
             <input className="search-input" placeholder="Search documents..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
           <button className="btn btn-primary" onClick={() => setModalOpen(true)}>↑ Upload Document</button>
@@ -122,27 +148,27 @@ function DocumentsPage() {
                 {DOC_ICONS[doc.docType] || '📁'}
               </div>
               <div style={{ display: 'flex', gap: '4px' }}>
-                <a className="btn-icon" title="Download" href={`http://localhost:5000/api/documents/${doc.id}/download`} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>⬇️</a>
-                <button className="btn-icon" title="Delete" onClick={() => handleDelete(doc)}>🗑️</button>
+                <button className="btn-icon" title="Secure Download" onClick={() => handleSecureDownload(doc)}><FiDownload /></button>
+                <button className="btn-icon" title="Delete" onClick={() => handleDelete(doc)}><FiTrash2 /></button>
               </div>
             </div>
 
             <div>
-              <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2, wordBreak: 'break-all' }}>{doc.fileName}</div>
+              <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2, wordBreak: 'break-all' }}><HighlightText text={doc.fileName} highlight={search} /></div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{doc.size}</div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid var(--bg-border)', paddingTop: 8 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Customer</span>
-                <span style={{ fontWeight: 500 }}>{doc.customerName}</span>
+                <span style={{ fontWeight: 500 }}><HighlightText text={doc.customerName} highlight={search} /></span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Type</span>
                 <span style={{
                   background: 'rgba(59,130,246,0.1)', color: 'var(--primary-400)',
                   padding: '1px 8px', borderRadius: '9999px', fontWeight: 500
-                }}>{doc.docType}</span>
+                }}><HighlightText text={doc.docType} highlight={search} /></span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Uploaded</span>
@@ -155,7 +181,7 @@ function DocumentsPage() {
 
       {filtered.length === 0 && (
         <div className="empty-state" style={{ marginTop: 40 }}>
-          <div className="empty-state-icon">📁</div>
+          <div className="empty-state-icon"><FiFolder /></div>
           <h3>No documents found</h3>
           <p>Upload policy PDFs, Aadhaar, PAN, and other customer documents.</p>
         </div>

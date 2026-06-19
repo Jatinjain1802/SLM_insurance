@@ -5,8 +5,9 @@
 // For SMS:      POST /api/sms/send        { to: "9876543210", message: "..." }
 // We also show message history (logs) from both channels.
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { notificationsAPI } from '../services/api'
+import { FiMessageSquare, FiSmartphone, FiBell, FiEdit3, FiCalendar, FiClock } from 'react-icons/fi'
 
 const MOCK_LOGS = []
 
@@ -79,10 +80,10 @@ function NotificationsPage() {
     setTimeout(() => setSent(false), 3000)
   }
 
-  const CHANNEL_CONFIG = {
-    whatsapp: { icon: '💬', color: '#25D366', label: 'WhatsApp' },
-    sms:      { icon: '📱', color: '#3b82f6', label: 'SMS (Fast2SMS)' },
-    both:     { icon: '🔔', color: '#8b5cf6', label: 'Both Channels' },
+  const CHANNEL_META = {
+    whatsapp: { icon: <FiMessageSquare />, color: '#10b981', label: 'WhatsApp' },
+    sms:      { icon: <FiSmartphone />, color: '#3b82f6', label: 'SMS (Fast2SMS)' },
+    both:     { icon: <FiBell />, color: '#8b5cf6', label: 'Both Channels' },
   }
 
   return (
@@ -96,10 +97,10 @@ function NotificationsPage() {
 
       <div className="tabs">
         <button className={`tab-btn ${activeTab === 'compose' ? 'active' : ''}`} onClick={() => setActiveTab('compose')}>
-          ✍️ Compose Message
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FiEdit3 /> Compose Message</div>
         </button>
         <button className={`tab-btn ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>
-          📜 Message Logs ({logs.length})
+          <FiBell /> Message Logs ({logs.length})
         </button>
       </div>
 
@@ -118,7 +119,7 @@ function NotificationsPage() {
               <div className="form-group">
                 <label className="form-label">Send via</label>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  {Object.entries(CHANNEL_CONFIG).map(([key, cfg]) => (
+                  {Object.entries(CHANNEL_META).map(([key, cfg]) => (
                     <button
                       key={key}
                       type="button"
@@ -172,7 +173,7 @@ function NotificationsPage() {
               </div>
 
               <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={sending}>
-                {sending ? 'Sending...' : `${CHANNEL_CONFIG[channel].icon} Send via ${CHANNEL_CONFIG[channel].label}`}
+                {sending ? 'Sending...' : <>{CHANNEL_META[channel].icon} Send via {CHANNEL_META[channel].label}</>}
               </button>
             </form>
           </div>
@@ -202,7 +203,7 @@ function NotificationsPage() {
                   >
                     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 3 }}>{tmpl.name}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                      {tmpl.channel === 'both' ? '💬 + 📱' : tmpl.channel === 'whatsapp' ? '💬 WhatsApp' : '📱 SMS'}
+                      {tmpl.channel === 'both' ? <><FiMessageSquare /> + <FiSmartphone /></> : tmpl.channel === 'whatsapp' ? <><FiMessageSquare /> WhatsApp</> : <><FiSmartphone /> SMS</>}
                     </div>
                   </button>
                 ))}
@@ -211,14 +212,14 @@ function NotificationsPage() {
 
             {/* WhatsApp Automation Info */}
             <div className="card" style={{ marginTop: 16 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>🤖 Auto Reminders</div>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}><FiBell /> Auto Reminders</div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
                 The system automatically sends WhatsApp + SMS reminders when policies expire in:
                 <br /><br />
-                <span style={{ color: 'var(--info-text)' }}>📅 30 days</span> → WhatsApp only<br />
-                <span style={{ color: 'var(--warning-text)' }}>⚡ 15 days</span> → WhatsApp + SMS<br />
-                <span style={{ color: 'var(--warning-text)' }}>🔔 7 days</span> → WhatsApp + SMS<br />
-                <span style={{ color: 'var(--danger-text)' }}>🚨 1 day</span> → WhatsApp + SMS (Urgent)
+                <span style={{ color: 'var(--info-text)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><FiCalendar /> 30 days</span> → WhatsApp only<br />
+                <span style={{ color: 'var(--warning-text)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><FiBell /> 15 days</span> → WhatsApp + SMS<br />
+                <span style={{ color: 'var(--warning-text)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><FiBell /> 7 days</span> → WhatsApp + SMS<br />
+                <span style={{ color: 'var(--danger-text)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><FiClock /> 1 day</span> → WhatsApp + SMS (Urgent)
               </div>
             </div>
           </div>
@@ -244,7 +245,7 @@ function NotificationsPage() {
                   <tr key={log.id}>
                     <td>
                       <span style={{ fontSize: 18 }}>
-                        {log.channel === 'whatsapp' ? '💬' : '📱'}
+                        {log.channel === 'whatsapp' ? <FiMessageSquare /> : <FiSmartphone />}
                       </span>
                     </td>
                     <td style={{ fontFamily: 'monospace' }}>{log.to}</td>

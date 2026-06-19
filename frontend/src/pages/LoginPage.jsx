@@ -7,6 +7,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { FiShield, FiAlertTriangle } from 'react-icons/fi'
 import { authAPI } from '../services/api'
 
 function LoginPage() {
@@ -58,7 +59,7 @@ function LoginPage() {
       <div className="login-card">
         {/* Logo */}
         <div className="login-logo">
-          <div className="login-logo-icon">🛡️</div>
+          <div className="login-logo-icon"><FiShield /></div>
           <h1>SLM Insurance</h1>
           <p>Sign in to your CRM dashboard</p>
         </div>
@@ -66,7 +67,7 @@ function LoginPage() {
         {/* Error Alert */}
         {error && (
           <div className="alert alert-error" style={{ marginBottom: '16px' }}>
-            ⚠️ {error}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FiAlertTriangle /> {error}</div>
           </div>
         )}
 
