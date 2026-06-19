@@ -4,9 +4,13 @@
 // Here, DashboardPage will pass: label, value, icon, color, change, changeType
 // This component just displays them — it doesn't need to know anything else.
 
-function StatCard({ label, value, icon, color = 'blue', change, changeType }) {
+function StatCard({ label, value, icon, color = 'blue', change, changeType, onClick }) {
   return (
-    <div className={`stat-card ${color}`}>
+    <div 
+      className={`stat-card ${color}`} 
+      onClick={onClick}
+      style={{ cursor: onClick ? 'pointer' : 'default' }}
+    >
       {/* Top row: label + icon */}
       <div className="stat-card-header">
         <span className="stat-card-label">{label}</span>

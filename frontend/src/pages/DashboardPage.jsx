@@ -13,7 +13,7 @@ import {
 } from 'recharts'
 import StatCard from '../components/StatCard'
 import { dashboardAPI } from '../services/api'
-import { FiUserPlus, FiFilePlus, FiUploadCloud, FiBell, FiCheckCircle, FiXCircle, FiDollarSign, FiTrendingUp, FiUsers } from 'react-icons/fi'
+import { FiUserPlus, FiFilePlus, FiUploadCloud, FiBell, FiCheckCircle, FiXCircle, FiDollarSign, FiTrendingUp, FiUsers, FiClock, FiBarChart2 } from 'react-icons/fi'
 
 const INITIAL_STATS = {
   totalCustomers: 0,
@@ -82,10 +82,11 @@ function DashboardPage() {
         <StatCard
           label="Total Customers"
           value={stats.totalCustomers}
-          icon="👥"
+          icon={<FiUsers />}
           color="blue"
           change="12% this month"
           changeType="up"
+          onClick={() => navigate('/customers')}
         />
         <StatCard
           label="Active Policies"
@@ -94,20 +95,23 @@ function DashboardPage() {
           color="green"
           change="8% this month"
           changeType="up"
+          onClick={() => navigate('/policies')}
         />
         <StatCard
           label="Expiring Soon"
           value={stats.dueSoon}
-          icon="⏰"
+          icon={<FiClock />}
           color="orange"
           change="Needs attention"
           changeType="down"
+          onClick={() => navigate('/policies')}
         />
         <StatCard
           label="Expired Policies"
           value={stats.expiredPolicies}
           icon={<FiXCircle />}
           color="red"
+          onClick={() => navigate('/policies')}
         />
         <StatCard
           label="Monthly Revenue"
@@ -116,12 +120,14 @@ function DashboardPage() {
           color="teal"
           change="6% this month"
           changeType="up"
+          onClick={() => navigate('/reports')}
         />
         <StatCard
           label="Total Premium"
           value={formatCurrency(stats.totalPremium)}
-          icon="📊"
+          icon={<FiBarChart2 />}
           color="purple"
+          onClick={() => navigate('/reports')}
         />
       </div>
 
