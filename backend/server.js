@@ -15,6 +15,7 @@ const path    = require('path')
 
 // Import Sequelize models and connection
 const { sequelize } = require('./models')
+const seedDatabase = require('./seed')
 
 // Import background jobs
 const { startReminderJob } = require('./jobs/reminder.job')
@@ -97,6 +98,9 @@ const startServer = async () => {
     // NEVER use { force: true } in production as it DROPS all tables first!
     await sequelize.sync({ alter: true }) 
     console.log('✅ Database connected and models synced.')
+
+    // 1.5 Auto-seed database if empty
+    await seedDatabase()
 
     // 2. Start the Express server
     app.listen(PORT, () => {

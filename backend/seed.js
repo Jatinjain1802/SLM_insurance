@@ -3,10 +3,13 @@ const { sequelize, User, InsuranceCompany, Customer, Policy, Premium } = require
 
 const seedDatabase = async () => {
   try {
-    console.log('Connecting to database and dropping existing tables (sync({force: true}))...')
-    await sequelize.sync({ force: true }) // Drop & re-create tables
+    const adminCount = await User.count()
+    if (adminCount > 0) {
+      console.log('Database already seeded. Skipping seed process.')
+      return
+    }
 
-    console.log('Inserting initial data...')
+    console.log('Inserting initial data (Auto-Seed)...')
 
     // 1. Create Admin User
     const hashedPassword = await bcrypt.hash('password123', 10)
@@ -101,13 +104,11 @@ const seedDatabase = async () => {
       }
     ])
 
-    console.log('Database seeded successfully! 🎉')
+    console.log('Database auto-seeded successfully! 🎉')
     console.log('Login credentials -> Email: admin@slm.com | Password: password123')
-    process.exit(0)
   } catch (error) {
     console.error('Error seeding database:', error)
-    process.exit(1)
   }
 }
 
-seedDatabase()
+module.exports = seedDatabase
