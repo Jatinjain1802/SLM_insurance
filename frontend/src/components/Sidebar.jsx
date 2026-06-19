@@ -7,10 +7,11 @@
 
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import { 
   FiPieChart, FiUsers, FiFileText, FiDollarSign, 
   FiBriefcase, FiFolder, FiTrendingUp, FiBell, 
-  FiSettings, FiShield 
+  FiSettings, FiShield, FiSun, FiMoon
 } from 'react-icons/fi'
 
 // Navigation items — each has a path, icon (component), and label
@@ -54,6 +55,7 @@ const NAV_SECTIONS = [
 
 function Sidebar() {
   const { user: authUser, logout } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   // In demo mode there's no logged-in user, so we use a placeholder
   const user = authUser || { name: 'Demo Owner', role: 'owner' }
   const navigate = useNavigate()
@@ -106,8 +108,17 @@ function Sidebar() {
         ))}
       </nav>
 
-      {/* ---- User Info + Logout ---- */}
+      {/* ---- User Info + Theme Toggle + Logout ---- */}
       <div className="sidebar-footer">
+        {/* Theme Toggle Button */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', padding: '0 8px' }}>
+          <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Theme</span>
+          <button className="btn-icon" onClick={toggleTheme} title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}>
+            {theme === 'light' ? <FiMoon size={16} /> : <FiSun size={16} />}
+          </button>
+        </div>
+
+        {/* User Info & Logout */}
         <div className="sidebar-user" onClick={handleLogout} title="Click to logout">
           <div className="sidebar-avatar">
             {getInitials(user?.name || 'U')}

@@ -41,7 +41,16 @@ const receiveMessage = async (req, res) => {
       if (messages && messages.length > 0) {
         const msg  = messages[0]
         const from = msg.from       // customer's WhatsApp number
-        const text = msg.text?.body // message text
+        let text = ''
+        if (msg.type === 'text') {
+          text = msg.text?.body
+        } else if (msg.type === 'interactive') {
+          if (msg.interactive?.type === 'list_reply') {
+            text = msg.interactive.list_reply.id
+          } else if (msg.interactive?.type === 'button_reply') {
+            text = msg.interactive.button_reply.id
+          }
+        }
 
         if (text) {
           console.log(`📱 Incoming WhatsApp from ${from}: "${text}"`)

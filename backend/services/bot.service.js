@@ -8,28 +8,41 @@
 // Map is like a JavaScript object but better for storing key-value pairs.
 // Key = mobile number, Value = { step, selectedPolicyIndex }
 
+const { Op } = require('sequelize')
 const { Customer, Policy, Premium, InsuranceCompany, User } = require('../models')
-const { sendTextMessage } = require('./whatsapp.service')
+const { sendTextMessage, sendInteractiveList, sendInteractiveButton } = require('./whatsapp.service')
 
 // In-memory conversation state store
 // LEARNING NOTE: In production, use Redis for this (persists across server restarts)
 // Map<mobileNumber, { step: string, data: object }>
 const conversationState = new Map()
 
-// ============================================================
-// Main menu text
-// ============================================================
-const MAIN_MENU = `Welcome to *ABC Insurance* 🛡️
+const sendMainMenu = async (from, customer) => {
+  const sections = [
+    {
+      title: 'Main Menu',
+      rows: [
+        { id: '1', title: 'My Policies', description: 'View your active policies' },
+        { id: '2', title: 'Upcoming Premiums', description: 'Check premiums due soon' },
+        { id: '3', title: 'Renewal Status', description: 'Check expiring policies' },
+        { id: '4', title: 'Download Document', description: 'Get policy PDF copies' },
+        { id: '5', title: 'Contact Agent', description: 'Get agent contact details' }
+      ]
+    }
+  ]
+  
+  await sendInteractiveList(
+    from,
+    `Hello ${customer.name}! 👋\n\nWelcome to *SLM Insurance* 🛡️\n\nPlease choose an option below:`,
+    'View Options',
+    sections,
+    customer.id
+  )
+}
 
-Please choose an option:
-
-1️⃣  My Policies
-2️⃣  Upcoming Premium Due
-3️⃣  Policy Renewal Status
-4️⃣  Download Policy Document
-5️⃣  Contact My Agent
-
-Reply with a number (1-5)`
+const sendTextWithMenuButton = async (from, text, customerId) => {
+  await sendInteractiveButton(from, text, [{ id: '0', title: '🏠 Main Menu' }], customerId)
+}
 
 // ============================================================
 // Handle an incoming WhatsApp message
@@ -38,21 +51,28 @@ Reply with a number (1-5)`
 const handleIncomingMessage = async (from, messageText) => {
   const text = messageText.trim().toLowerCase()
 
-  // Find customer by mobile number
+  // Extract the last 10 digits as the local number
+  const localNumber = from.length > 10 ? from.slice(-10) : from
+
+  // Find customer by mobile number (matching either full WA number or 10-digit number)
   const customer = await Customer.findOne({
-    where: { mobile: from },
+    where: { 
+      mobile: {
+        [Op.or]: [from, localNumber, `91${localNumber}`, `+91${localNumber}`]
+      }
+    },
     include: [
       { model: Policy, as: 'policies',
         include: [{ model: InsuranceCompany, as: 'company' }]
       },
-      { model: User, as: 'assignedAgent', attributes: ['name', 'mobile'] },
+      { model: User, as: 'assignedAgent', attributes: ['name', 'email'] },
     ],
   })
 
   // If customer not found in our system
   if (!customer) {
     await sendTextMessage(from,
-      `Sorry, we couldn't find your number in our system. 😔\n\nPlease contact us at:\n📞 9876543210\n📧 contact@abcinsurance.com`
+      `Sorry, we couldn't find your number in our system. 😔\n\nPlease contact us at:\n📞 9876543210\n📧 contact@slminsurance.com`
     )
     return
   }
@@ -63,7 +83,7 @@ const handleIncomingMessage = async (from, messageText) => {
   // Handle "hi", "hello", "menu", "0" → always go back to main menu
   if (['hi', 'hello', 'hey', 'menu', '0', 'start', 'home'].includes(text)) {
     conversationState.set(from, { step: 'menu' })
-    await sendTextMessage(from, `Hello ${customer.name}! 👋\n\n${MAIN_MENU}`, customer.id)
+    await sendMainMenu(from, customer)
     return
   }
 
@@ -83,7 +103,7 @@ const handleIncomingMessage = async (from, messageText) => {
     default:
       // Unknown state — reset to menu
       conversationState.set(from, { step: 'menu' })
-      await sendTextMessage(from, MAIN_MENU, customer.id)
+      await sendMainMenu(from, customer)
   }
 }
 
@@ -98,14 +118,14 @@ const handleMenuChoice = async (from, choice, customer) => {
     // 1 — My Policies
     case '1': {
       if (policies.length === 0) {
-        await sendTextMessage(from, `You don't have any policies registered yet.\n\nPlease contact your agent.`, customer.id)
+        await sendTextWithMenuButton(from, `You don't have any policies registered yet.\n\nPlease contact your agent.`, customer.id)
         return
       }
       const list = policies.map((p, i) =>
         `${i + 1}. *${p.policyNumber}* — ${p.policyType} (${p.company?.name || ''})\n   Status: ${p.status.toUpperCase()}`
       ).join('\n\n')
 
-      await sendTextMessage(from, `📋 *Your Policies*\n\n${list}\n\nTotal: ${policies.length} policies\n\nReply *0* for main menu`, customer.id)
+      await sendTextWithMenuButton(from, `📋 *Your Policies*\n\n${list}\n\nTotal: ${policies.length} policies`, customer.id)
       break
     }
 
@@ -118,7 +138,7 @@ const handleMenuChoice = async (from, choice, customer) => {
       const policyIds = policies.map(p => p.id)
 
       if (policyIds.length === 0) {
-        await sendTextMessage(from, 'No policies found.\n\nReply *0* for main menu', customer.id)
+        await sendTextWithMenuButton(from, 'No policies found.', customer.id)
         return
       }
 
@@ -135,7 +155,7 @@ const handleMenuChoice = async (from, choice, customer) => {
       })
 
       if (upcoming.length === 0) {
-        await sendTextMessage(from, `✅ No premiums due in the next 30 days.\n\nReply *0* for main menu`, customer.id)
+        await sendTextWithMenuButton(from, `✅ No premiums due in the next 30 days.`, customer.id)
         return
       }
 
@@ -144,7 +164,7 @@ const handleMenuChoice = async (from, choice, customer) => {
         return `📋 *${u.policy.policyNumber}*\n💰 Amount: ₹${Number(u.amount).toLocaleString('en-IN')}\n📅 Due: ${new Date(u.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}\n⏰ ${days} day${days === 1 ? '' : 's'} left`
       }).join('\n\n')
 
-      await sendTextMessage(from, `💰 *Upcoming Premiums*\n\n${lines}\n\nReply *0* for main menu`, customer.id)
+      await sendTextWithMenuButton(from, `💰 *Upcoming Premiums*\n\n${lines}`, customer.id)
       break
     }
 
@@ -160,7 +180,7 @@ const handleMenuChoice = async (from, choice, customer) => {
       })
 
       if (expiring.length === 0) {
-        await sendTextMessage(from, `✅ All your policies are valid for the next 30 days.\n\nReply *0* for main menu`, customer.id)
+        await sendTextWithMenuButton(from, `✅ All your policies are valid for the next 30 days.`, customer.id)
         return
       }
 
@@ -169,13 +189,12 @@ const handleMenuChoice = async (from, choice, customer) => {
         return `📋 *${p.policyNumber}*\nStatus: ${p.status.toUpperCase()}\nExpiry: ${new Date(p.expiryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}\n⏰ ${days} days left — Please renew!`
       }).join('\n\n')
 
-      await sendTextMessage(from, `🔄 *Renewal Required*\n\n${lines}\n\nReply *0* for main menu`, customer.id)
+      await sendTextWithMenuButton(from, `🔄 *Renewal Required*\n\n${lines}`, customer.id)
       break
     }
 
-    // 4 — Download Policy (we send a note to contact agent)
     case '4': {
-      await sendTextMessage(from, `📥 *Policy Documents*\n\nTo download your policy documents, please contact your agent:\n\n👤 ${customer.assignedAgent?.name || 'Your Agent'}\n📞 ${customer.assignedAgent?.mobile || 'Contact us at 9876543210'}\n\nOr email: documents@abcinsurance.com\n\nReply *0* for main menu`, customer.id)
+      await sendTextWithMenuButton(from, `📥 *Policy Documents*\n\nTo download your policy documents, please contact your agent:\n\n👤 ${customer.assignedAgent?.name || 'Your Agent'}\n📧 ${customer.assignedAgent?.email || 'Contact us at documents@slminsurance.com'}`, customer.id)
       break
     }
 
@@ -183,14 +202,14 @@ const handleMenuChoice = async (from, choice, customer) => {
     case '5': {
       const agent = customer.assignedAgent
       const msg = agent
-        ? `👤 *Your Agent*\n\nName: ${agent.name}\nMobile: ${agent.mobile}\n\nFeel free to contact them for any queries!\n\nReply *0* for main menu`
-        : `📞 *Contact Us*\n\nPhone: 9876543210\nEmail: contact@abcinsurance.com\nHours: Mon–Sat, 9 AM – 6 PM\n\nReply *0* for main menu`
-      await sendTextMessage(from, msg, customer.id)
+        ? `👤 *Your Agent*\n\nName: ${agent.name}\nEmail: ${agent.email}\n\nFeel free to contact them for any queries!`
+        : `📞 *Contact Us*\n\nPhone: 9876543210\nEmail: contact@slminsurance.com\nHours: Mon–Sat, 9 AM – 6 PM`
+      await sendTextWithMenuButton(from, msg, customer.id)
       break
     }
 
     default:
-      await sendTextMessage(from, `❓ I didn't understand that.\n\n${MAIN_MENU}`, customer.id)
+      await sendTextWithMenuButton(from, `❓ I didn't understand that.`, customer.id)
   }
 }
 
@@ -202,7 +221,7 @@ const handlePolicySelection = async (from, choice, customer, state) => {
   const policies = customer.policies || []
 
   if (index < 0 || index >= policies.length) {
-    await sendTextMessage(from, `Invalid choice. Please enter a number between 1 and ${policies.length}.\n\nReply *0* for main menu`, customer.id)
+    await sendTextWithMenuButton(from, `Invalid choice. Please enter a number between 1 and ${policies.length}.`, customer.id)
     return
   }
 
@@ -211,8 +230,8 @@ const handlePolicySelection = async (from, choice, customer, state) => {
   const expiry  = new Date(policy.expiryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
   const premium = Number(policy.premiumAmount).toLocaleString('en-IN')
 
-  const msg = `📋 *Policy Details*\n\nPolicy No: *${policy.policyNumber}*\nType: ${policy.policyType}\nCompany: ${company}\nPremium: ₹${premium}\nExpiry: ${expiry}\nStatus: ${policy.status.toUpperCase()}\n\nReply *0* for main menu`
-  await sendTextMessage(from, msg, customer.id)
+  const msg = `📋 *Policy Details*\n\nPolicy No: *${policy.policyNumber}*\nType: ${policy.policyType}\nCompany: ${company}\nPremium: ₹${premium}\nExpiry: ${expiry}\nStatus: ${policy.status.toUpperCase()}`
+  await sendTextWithMenuButton(from, msg, customer.id)
   conversationState.set(from, { step: 'menu' })
 }
 

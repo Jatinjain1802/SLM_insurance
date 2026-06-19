@@ -21,6 +21,9 @@ const { startReminderJob } = require('./jobs/reminder.job')
 
 const app = express()
 
+// Trust the first proxy (e.g. Ngrok) to accurately identify client IP for rate limiting
+app.set('trust proxy', 1)
+
 // ============================================================
 // MIDDLEWARE (SECURITY & PARSING)
 // ============================================================
@@ -34,22 +37,23 @@ app.use(helmet())
 // Configure helmet to allow images from our uploads folder or cross-origin if needed
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }))
 
-// 2. Global Rate Limiter: maximum 100 requests per 15 minutes per IP
+// 1.5. Enable CORS so our React frontend (port 5173) can talk to this backend (port 5000)
+// IMPORTANT: CORS must be before rate limiting, otherwise rate-limited responses will lack CORS headers!
+app.use(corsPkg({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true
+}))
+
+// 2. Global Rate Limiter: maximum 1000 requests per 15 minutes per IP
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, 
+  max: 1000, 
   message: { message: 'Too many requests from this IP, please try again after 15 minutes' },
   standardHeaders: true,
   legacyHeaders: false,
 })
 // Apply rate limiter to all API routes
 app.use('/api', apiLimiter)
-
-// Enable CORS so our React frontend (port 5173) can talk to this backend (port 5000)
-app.use(corsPkg({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
-}))
 
 // Parse incoming JSON payloads in request bodies
 app.use(express.json())

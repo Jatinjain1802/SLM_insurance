@@ -91,9 +91,14 @@ const markAsPaid = async (req, res) => {
   }
 }
 
-// GET /api/premiums/all
 const getAllPremiums = async (req, res) => {
   try {
+    // Automatically update overdue premiums in DB
+    await Premium.update(
+      { status: 'overdue' },
+      { where: { status: 'upcoming', dueDate: { [Op.lt]: new Date() } } }
+    )
+
     const premiums = await Premium.findAll({
       include: [
         {

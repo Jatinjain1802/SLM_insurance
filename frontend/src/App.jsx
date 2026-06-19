@@ -13,6 +13,7 @@
 import React, { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { ThemeProvider } from './context/ThemeContext'
 import Sidebar from './components/Sidebar'
 import Loader from './components/Loader'
 import { FiAlertCircle } from 'react-icons/fi'
@@ -147,13 +148,16 @@ function AppRoutes() {
 // Root App component — wraps everything with AuthProvider and BrowserRouter
 function App() {
   return (
-    // AuthProvider makes auth state available everywhere
-    <AuthProvider>
-      {/* BrowserRouter enables URL-based routing */}
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </AuthProvider>
+    // ThemeProvider makes light/dark mode available everywhere
+    <ThemeProvider>
+      {/* AuthProvider makes auth state available everywhere */}
+      <AuthProvider>
+        {/* BrowserRouter enables URL-based routing */}
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   )
 }
 

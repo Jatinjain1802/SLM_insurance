@@ -67,6 +67,124 @@ const sendTextMessage = async (to, message, customerId = null) => {
     return { success: false, error: error.response?.data || error.message }
   }
 }
+// ============================================================
+// Send an Interactive List message to a WhatsApp number
+// ============================================================
+const sendInteractiveList = async (to, bodyText, buttonText, sections, customerId = null) => {
+  try {
+    const response = await axios.post(
+      `${WA_API_URL}/${process.env.WHATSAPP_PHONE_ID}/messages`,
+      {
+        messaging_product: 'whatsapp',
+        recipient_type:    'individual',
+        to:                to,
+        type:              'interactive',
+        interactive: {
+          type: 'list',
+          body: {
+            text: bodyText,
+          },
+          action: {
+            button: buttonText,
+            sections: sections,
+          },
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    )
+
+    await MessageLog.create({
+      mobile:     to,
+      channel:    'whatsapp',
+      direction:  'outbound',
+      message:    bodyText,
+      status:     'sent',
+      customerId,
+      externalId: response.data?.messages?.[0]?.id,
+    })
+
+    console.log(`✅ WhatsApp interactive list sent to ${to}`)
+    return { success: true, data: response.data }
+
+  } catch (error) {
+    await MessageLog.create({
+      mobile:    to,
+      channel:   'whatsapp',
+      direction: 'outbound',
+      message:   bodyText,
+      status:    'failed',
+      customerId,
+    }).catch(() => {})
+
+    console.error(`❌ WhatsApp failed to ${to}:`, error.response?.data || error.message)
+    return { success: false, error: error.response?.data || error.message }
+  }
+}
+
+const sendInteractiveButton = async (to, bodyText, buttons, customerId = null) => {
+  try {
+    const response = await axios.post(
+      `${WA_API_URL}/${process.env.WHATSAPP_PHONE_ID}/messages`,
+      {
+        messaging_product: 'whatsapp',
+        recipient_type:    'individual',
+        to:                to,
+        type:              'interactive',
+        interactive: {
+          type: 'button',
+          body: {
+            text: bodyText,
+          },
+          action: {
+            buttons: buttons.map(btn => ({
+              type: 'reply',
+              reply: {
+                id: btn.id,
+                title: btn.title
+              }
+            }))
+          },
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    )
+
+    await MessageLog.create({
+      mobile:     to,
+      channel:    'whatsapp',
+      direction:  'outbound',
+      message:    bodyText,
+      status:     'sent',
+      customerId,
+      externalId: response.data?.messages?.[0]?.id,
+    })
+
+    return { success: true, data: response.data }
+
+  } catch (error) {
+    await MessageLog.create({
+      mobile:    to,
+      channel:   'whatsapp',
+      direction: 'outbound',
+      message:   bodyText,
+      status:    'failed',
+      customerId,
+    }).catch(() => {})
+
+    console.error(`❌ WhatsApp failed to ${to}:`, error.response?.data || error.message)
+    return { success: false, error: error.response?.data || error.message }
+  }
+}
 
 // ============================================================
 // Policy Expiry Reminder Message (used by cron job)
@@ -82,7 +200,7 @@ Please renew it before the expiry date to stay protected.
 
 Reply *HI* to chat with us anytime.
 
-— ABC Insurance 🛡️`
+— SLM Insurance 🛡️`
 
   return sendTextMessage(customer.mobile, message, customer.id)
 }
@@ -97,11 +215,11 @@ Your policy *${policy.policyNumber}* has been successfully renewed! ✅
 
 New Expiry Date: *${new Date(policy.expiryDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}*
 
-Thank you for your continued trust in ABC Insurance. 🙏
+Thank you for your continued trust in SLM Insurance. 🙏
 
-— ABC Insurance 🛡️`
+— SLM Insurance 🛡️`
 
   return sendTextMessage(customer.mobile, message, customer.id)
 }
 
-module.exports = { sendTextMessage, sendExpiryReminder, sendRenewalConfirmation }
+module.exports = { sendTextMessage, sendInteractiveList, sendInteractiveButton, sendExpiryReminder, sendRenewalConfirmation }

@@ -105,9 +105,38 @@ const createPolicy = async (req, res) => {
       startDate, expiryDate, premiumAmount, paymentFrequency, status, notes,
     })
 
-    // Auto-create the first premium entry based on frequency
-    // LEARNING NOTE: This creates the first upcoming payment record automatically
-    if (expiryDate && premiumAmount) {
+    // Auto-create premium entries based on frequency
+    // LEARNING NOTE: We use a loop to generate the full payment schedule automatically
+    if (startDate && expiryDate && premiumAmount) {
+      const premiumsToCreate = []
+      const start = new Date(startDate)
+      const end = new Date(expiryDate)
+      
+      let monthsToAdd = 12
+      if (paymentFrequency === 'monthly') monthsToAdd = 1
+      else if (paymentFrequency === 'quarterly') monthsToAdd = 3
+      else if (paymentFrequency === 'half-yearly') monthsToAdd = 6
+      else if (paymentFrequency === 'yearly') monthsToAdd = 12
+
+      let currentDue = new Date(start)
+      let count = 0 // Safety limit to prevent infinite loops
+      
+      while (currentDue < end && count < 120) {
+        premiumsToCreate.push({
+          policyId: policy.id,
+          dueDate: new Date(currentDue),
+          amount: premiumAmount,
+          status: 'upcoming',
+        })
+        currentDue.setMonth(currentDue.getMonth() + monthsToAdd)
+        count++
+      }
+
+      if (premiumsToCreate.length > 0) {
+        await Premium.bulkCreate(premiumsToCreate)
+      }
+    } else if (expiryDate && premiumAmount) {
+      // Fallback if no start date is provided: just create one premium at expiry
       await Premium.create({
         policyId: policy.id,
         dueDate: expiryDate,

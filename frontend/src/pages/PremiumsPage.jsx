@@ -21,11 +21,8 @@ function PremiumsPage() {
     const fetchPremiums = async () => {
       setLoading(true)
       try {
-        const [upcomingRes, overdueRes] = await Promise.all([
-          premiumsAPI.getUpcoming(),
-          premiumsAPI.getOverdue(),
-        ])
-        setPremiums([...upcomingRes.data, ...overdueRes.data])
+        const res = await premiumsAPI.getAll()
+        setPremiums(res.data)
       } catch (err) {
         console.error('Failed to fetch premiums', err)
       }

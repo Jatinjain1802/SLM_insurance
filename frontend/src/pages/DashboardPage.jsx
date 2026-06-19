@@ -14,20 +14,20 @@ import {
 import StatCard from '../components/StatCard'
 import { dashboardAPI } from '../services/api'
 
-// ---- Mock data (used until backend is connected) ----
-const MOCK_STATS = {
+const INITIAL_STATS = {
   totalCustomers: 0,
   activePolicies: 0,
   expiredPolicies: 0,
   dueSoon: 0,
   monthlyRevenue: 0,
   totalPremium: 0,
+  chartData: {
+    revenueData: [],
+    policyTypeData: [],
+    renewalData: [],
+    recentCustomers: []
+  }
 }
-
-const REVENUE_DATA = []
-const POLICY_TYPE_DATA = []
-const RENEWAL_DATA = []
-const RECENT_CUSTOMERS = []
 
 const QUICK_ACTIONS = [
   { icon: '👤', label: 'Add Customer',    path: '/customers' },
@@ -39,7 +39,7 @@ const QUICK_ACTIONS = [
 
 function DashboardPage() {
   const navigate = useNavigate()
-  const [stats, setStats] = useState(MOCK_STATS)
+  const [stats, setStats] = useState(INITIAL_STATS)
   const [loading, setLoading] = useState(false)
 
   // Fetch real stats from backend
@@ -47,9 +47,11 @@ function DashboardPage() {
     const fetchStats = async () => {
       try {
         const res = await dashboardAPI.getStats()
-        setStats(res.data)
+        if (res.data.chartData) {
+          setStats(res.data)
+        }
       } catch {
-        // If backend not ready, mock data is already set
+        // Fallback to initial state
       }
     }
     fetchStats()
@@ -155,7 +157,7 @@ function DashboardPage() {
             </div>
           </div>
           <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={REVENUE_DATA}>
+            <AreaChart data={stats.chartData.revenueData}>
               <defs>
                 <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
@@ -185,7 +187,7 @@ function DashboardPage() {
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
               <Pie
-                data={POLICY_TYPE_DATA}
+                data={stats.chartData.policyTypeData}
                 cx="50%"
                 cy="50%"
                 innerRadius={55}
@@ -193,7 +195,7 @@ function DashboardPage() {
                 paddingAngle={4}
                 dataKey="value"
               >
-                {POLICY_TYPE_DATA.map((entry) => (
+                {stats.chartData.policyTypeData.map((entry) => (
                   <Cell key={entry.name} fill={entry.color} />
                 ))}
               </Pie>
@@ -222,7 +224,7 @@ function DashboardPage() {
             </div>
           </div>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={RENEWAL_DATA} barSize={16}>
+            <BarChart data={stats.chartData.renewalData} barSize={16}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--bg-border)" />
               <XAxis dataKey="month" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -253,7 +255,7 @@ function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {RECENT_CUSTOMERS.map((c) => (
+                {stats.chartData.recentCustomers.map((c) => (
                   <tr key={c.mobile} style={{ borderTop: '1px solid var(--bg-border)', cursor: 'pointer' }} onClick={() => navigate('/customers')}>
                     <td style={{ padding: '10px 12px', fontSize: '13px', color: 'var(--text-primary)', fontWeight: 500 }}>{c.name}</td>
                     <td style={{ padding: '10px 12px', fontSize: '13px', color: 'var(--text-secondary)' }}>{c.mobile}</td>

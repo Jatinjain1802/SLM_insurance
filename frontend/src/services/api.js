@@ -46,6 +46,8 @@ api.interceptors.response.use(
       if (window.location.pathname !== '/login') {
         window.location.href = '/login'
       }
+    } else if (error.response?.status === 429) {
+      alert('Too many requests! Please wait a moment before trying again.')
     }
     return Promise.reject(error)
   }
@@ -89,6 +91,7 @@ export const policiesAPI = {
 export const premiumsAPI = {
   getUpcoming: () => api.get('/premiums/upcoming'),
   getOverdue: () => api.get('/premiums/overdue'),
+  getAll: () => api.get('/premiums/all'),
   markPaid: (id) => api.put(`/premiums/${id}/pay`),
 }
 
